@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/Rib0v/soundhead_back/7dfe94fc7ff10fbd7d23e79adc7a3e894df1dbf6/storage/app/laravel-logo.svg" width="400" alt="Laravel Logo"></p>
 
 # О проекте
 
@@ -73,6 +73,8 @@ sudo docker compose run --rm artisan migrate --seed
 
 ### Запуск бэка отдельно
 
+По умолчанию ресурс будет доступен на 80 порту `http://localhost/` 
+
 ```bash
 # Запускаем сервер - только бэк 
 sudo docker compose up lara
@@ -80,7 +82,7 @@ sudo docker compose up lara
 
 ### Запуск совместно с фронтом
 
-Сначала нужно запустить [frontend-часть](https://github.com/Rib0v/soundhead_front). После этого запускаем nginx.
+Сначала нужно запустить [frontend-часть](https://github.com/Rib0v/soundhead_front). После этого запускаем nginx. Сервер будет доступен на 80 порту `http://localhost/`
 
 ```bash
 # Стартуем сервер, когда фронтенд уже запущен
