@@ -51,7 +51,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Семён Семёныч',
             'email' => 'a@a.a',
-            'address' => 'г. Кирово-черпецк, ул. Кукурузная, д. 35, кв 14',
+            'address' => 'г. Кирово-Чепецк, ул. Кукурузная, д. 35, кв 14',
             'phone' => '+79999999999',
             'password' => '123',
         ]);

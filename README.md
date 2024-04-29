@@ -10,6 +10,8 @@ Backend-часть интернет-магазина на `Laravel`. Связь 
 /api/docs
 ```
 
+[[Frontend здесь](https://github.com/Rib0v/soundhead_front)]
+
 # Как развернуть локально
 
 ```bash
@@ -33,8 +35,8 @@ php artisan jwt:conf
 # Создаём в /public симлинк на storage/app/public/
 php artisan storage:link
 
-# Накатываем миграции
-php artisan migrate
+# Накатываем миграции + наполняем контентом
+php artisan migrate --seed
 
 # Запускаем сервер
 php artisan serve
@@ -42,11 +44,11 @@ php artisan serve
 
 # Как развернуть в Docker
 
-##### Различия в ОС
+### Различия в ОС
 
 Все команды написаны для `Linux` системы. В `Windows` и `Mac OS` необходимо заменить `docker compose` на `docker-compose`, а `sudo` писать не обязательно. В `Windows` все команды выполнять в среде `WSL`.
 
-##### Установка
+### Установка
 
 ```bash
 # Копируем файл конфига
@@ -65,20 +67,20 @@ sudo docker compose run --rm artisan key:generate
 # Генерируем ключ и конфиг для jwt-авторизации
 sudo docker compose run --rm artisan jwt:conf
 
-# Накатываем миграции
-sudo docker compose run --rm artisan migrate
+# Накатываем миграции + наполняем контентом
+sudo docker compose run --rm artisan migrate --seed
 ```
 
-##### Запуск бэка отдельно
+### Запуск бэка отдельно
 
 ```bash
 # Запускаем сервер - только бэк 
 sudo docker compose up lara
 ```
 
-##### Запуск совместно с фронтом
+### Запуск совместно с фронтом
 
-Сначала нужно запустить frontend-часть. После этого запускаем nginx.
+Сначала нужно запустить [frontend-часть](https://github.com/Rib0v/soundhead_front). После этого запускаем nginx.
 
 ```bash
 # Стартуем сервер, когда фронтенд уже запущен
