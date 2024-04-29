@@ -1,0 +1,2164 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API документашка",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/attributes": {
+            "get": {
+                "tags": [
+                    "Attribute"
+                ],
+                "summary": "INDEX - Список всех доступных характеристик товаров",
+                "operationId": "e48983aaee64bf1da038f1378aff0c81",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Марка"
+                                            },
+                                            "slug": {
+                                                "type": "string",
+                                                "example": "brand"
+                                            },
+                                            "vals": {
+                                                "type": "array",
+                                                "items": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Marshall"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "LOGIN - Аутентификация пользователя и выдача пары токенов",
+                "operationId": "8dcb70df1020986038d098cc08d05dae",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "example": "a@a.a"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user_id": {
+                                            "type": "integer",
+                                            "example": "1"
+                                        },
+                                        "access": {
+                                            "type": "string",
+                                            "example": "abcdefg...."
+                                        },
+                                        "access_exp": {
+                                            "type": "integer",
+                                            "example": "1712756994"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Неверный логин или пароль."
+                    },
+                    "422": {
+                        "description": "Валидация не пройдена",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "errors": {
+                                            "properties": {
+                                                "email": {
+                                                    "type": "arr",
+                                                    "example": "['error1', 'error2', ...]"
+                                                },
+                                                "password": {
+                                                    "type": "arr",
+                                                    "example": "['error1', 'error2', ...]"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/checkacc": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "checkAccess - Проверка access токена",
+                "operationId": "611e6f116a521cc357b7ddf1a90e0ce2",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "decoded": {
+                                            "properties": {
+                                                "iss": {
+                                                    "type": "string",
+                                                    "example": "http://example.com"
+                                                },
+                                                "sub": {
+                                                    "type": "integer",
+                                                    "example": "1"
+                                                },
+                                                "per": {
+                                                    "type": "arr",
+                                                    "example": "[1, 2, 3]"
+                                                },
+                                                "exp": {
+                                                    "type": "integer",
+                                                    "example": "1712757994"
+                                                },
+                                                "typ": {
+                                                    "type": "string",
+                                                    "example": "AT"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Валидация провалена",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Токен не найден."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Токен просрочен"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/checkref": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "checkRefresh - Проверка refresh токена",
+                "description": "Refresh токен хранится в куках",
+                "operationId": "6d7aa40f9eada0b265dc9bf579c0d19d",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "decoded": {
+                                            "properties": {
+                                                "iss": {
+                                                    "type": "string",
+                                                    "example": "http://example.com"
+                                                },
+                                                "sub": {
+                                                    "type": "integer",
+                                                    "example": "1"
+                                                },
+                                                "per": {
+                                                    "type": "arr",
+                                                    "example": "[1, 2, 3]"
+                                                },
+                                                "exp": {
+                                                    "type": "integer",
+                                                    "example": "1715349934"
+                                                },
+                                                "typ": {
+                                                    "type": "string",
+                                                    "example": "RT"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Валидация провалена",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Токен не найден."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Токен просрочен, либо недействителен"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/refresh": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "REFRESH - Обновление пары токенов",
+                "operationId": "b655e0f8fa74e3a128cf4548d7fe3a55",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user_id": {
+                                            "type": "integer",
+                                            "example": "1"
+                                        },
+                                        "access": {
+                                            "type": "string",
+                                            "example": "abcdefg...."
+                                        },
+                                        "access_exp": {
+                                            "type": "integer",
+                                            "example": "1712756994"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Валидация провалена",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Токен не найден."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Refresh токен просрочен, либо недействителен"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/logout": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "LOGOUT - Удаление refresh токена из куков и белого списка в БД",
+                "operationId": "a8dd056be3e98a38c657f73ed6cdef2d",
+                "responses": {
+                    "200": {
+                        "description": "Токен удалён из белого списка БД. Куки очищены.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Токен успешно удалён из базы и куков."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Валидация провалена. Куки очищены."
+                    },
+                    "403": {
+                        "description": "Refresh токен просрочен, либо недействителен. Куки очищены."
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/orders": {
+            "get": {
+                "tags": [
+                    "Order"
+                ],
+                "summary": "INDEX - Список всех заказов",
+                "operationId": "2cd7e03021e72d9d799c12dfe179c865",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "total": {
+                                                        "type": "integer",
+                                                        "example": 46200
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Семён Семёныч"
+                                                    },
+                                                    "user_id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "phone": {
+                                                        "type": "string",
+                                                        "example": "+79999999999"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "example": "example@mail.org"
+                                                    },
+                                                    "address": {
+                                                        "type": "string",
+                                                        "example": "ул. Кукурузная, д. 35"
+                                                    },
+                                                    "comment": {
+                                                        "type": "string",
+                                                        "example": "Побыстрее!"
+                                                    },
+                                                    "status": {
+                                                        "type": "string",
+                                                        "example": "Создан, ожидает подтверждения."
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        },
+                                        "meta": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав = не знаешь о существовании страницы"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Order"
+                ],
+                "summary": "STORE - Создание заказа",
+                "operationId": "d690d6834318e9b064df441e854de8b9",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Василий Иваныч"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "+70123456789"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "ivanich@mail.org"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "ул. Ленина, д. 1"
+                                    },
+                                    "comment": {
+                                        "type": "string",
+                                        "example": "Хочу скидку побольше!"
+                                    },
+                                    "products": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "product_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "count": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Заказ успешно создан."
+                                        },
+                                        "order": {
+                                            "type": "obj",
+                                            "example": "{ id, ... }"
+                                        },
+                                        "errors": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Валидация не пройдена"
+                    }
+                }
+            }
+        },
+        "/api/orders/{order}/status": {
+            "patch": {
+                "tags": [
+                    "Order"
+                ],
+                "summary": "changeStatus - Изменение статуса заказа",
+                "operationId": "25047fcd73201f1d4ba09153eaf5cef3",
+                "parameters": [
+                    {
+                        "name": "order",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "status": {
+                                        "type": "integer",
+                                        "example": 2
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Статус заказа #1 успешно изменён"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный id статуса",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Указан id несуществующего статуса."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав = не знаешь о существовании страницы"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/orders/{order}": {
+            "get": {
+                "tags": [
+                    "Order"
+                ],
+                "summary": "SHOW - Отображение заказа",
+                "operationId": "f090f23952a43521af6f1d133826bc37",
+                "parameters": [
+                    {
+                        "name": "order",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 46200
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Василий Иваныч"
+                                                },
+                                                "phone": {
+                                                    "type": "string",
+                                                    "example": "+70123456789"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "example@mail.org"
+                                                },
+                                                "address": {
+                                                    "type": "string",
+                                                    "example": "ул. Ленина, д. 1"
+                                                },
+                                                "comment": {
+                                                    "type": "string",
+                                                    "example": "Поживее!"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "Подтверждён, ожидает оплаты."
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "example": "2024-04-09T20:08:18.000000Z"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "example": "2024-04-09T16:08:40.000000Z"
+                                                },
+                                                "products": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "JBL pariatur"
+                                                            },
+                                                            "slug": {
+                                                                "type": "string",
+                                                                "example": "jbl-pariatur"
+                                                            },
+                                                            "image": {
+                                                                "type": "string",
+                                                                "example": "http://localhost:8000/storage/photos/products/overhead/wired/0.jpg"
+                                                            },
+                                                            "count": {
+                                                                "type": "integer",
+                                                                "example": 2
+                                                            },
+                                                            "price": {
+                                                                "type": "integer",
+                                                                "example": 23300
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав = не знаешь о существовании страницы"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Order"
+                ],
+                "summary": "DESTROY - Удаление заказа",
+                "operationId": "173211a50d204e6c949d9b18baa95efb",
+                "parameters": [
+                    {
+                        "name": "order",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Заказ удалён."
+                                        },
+                                        "order": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "status_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 46200
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Василий Иваныч"
+                                                },
+                                                "phone": {
+                                                    "type": "string",
+                                                    "example": "+70123456789"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "ivanich@mail.org"
+                                                },
+                                                "address": {
+                                                    "type": "string",
+                                                    "example": "ул. Ленина, д. 1"
+                                                },
+                                                "comment": {
+                                                    "type": "string",
+                                                    "example": "Поживее!"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "example": "2024-04-09T20:08:18.000000Z"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "example": "2024-04-09T16:08:40.000000Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав = не знаешь о существовании страницы"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/users/{id}/orders": {
+            "get": {
+                "tags": [
+                    "Order"
+                ],
+                "summary": "showByUserId - Список заказов пользователя",
+                "operationId": "e883720a0185d1975acb17228d8e5096",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "total": {
+                                                        "type": "integer",
+                                                        "example": 46200
+                                                    },
+                                                    "address": {
+                                                        "type": "string",
+                                                        "example": "ул. Ленина, д. 1"
+                                                    },
+                                                    "comment": {
+                                                        "type": "string",
+                                                        "example": "Поживее!"
+                                                    },
+                                                    "status": {
+                                                        "type": "string",
+                                                        "example": "Подтверждён, ожидает оплаты."
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "example": "2024-04-09T20:08:18.000000Z"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string",
+                                                        "example": "2024-04-09T16:08:40.000000Z"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        },
+                                        "meta": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав = не знаешь о существовании страницы"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/products": {
+            "get": {
+                "tags": [
+                    "Product"
+                ],
+                "summary": "INDEX - Массив товаров",
+                "description": "Список фильтров динамический, берётся из БД. Приведены только некоторые параметры.",
+                "operationId": "1bfaa78d1c2c3848ab8165c5dadcad3e",
+                "parameters": [
+                    {
+                        "name": "brand",
+                        "in": "query",
+                        "description": "Пример: '1,2,3'",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "minprice",
+                        "in": "query",
+                        "description": "Пример: 1000",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "maxprice",
+                        "in": "query",
+                        "description": "Пример: 10000",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Значения: lowprice/hiprice/older/newer",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": "1"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Focal molestiae"
+                                                    },
+                                                    "slug": {
+                                                        "type": "string",
+                                                        "example": "focal-molestiae"
+                                                    },
+                                                    "price": {
+                                                        "type": "integer",
+                                                        "example": "22900"
+                                                    },
+                                                    "image": {
+                                                        "type": "string",
+                                                        "example": "/overhead/wired/0.jpg"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Expedita eos earum eaque culpa iure quae."
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        },
+                                        "meta": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Product"
+                ],
+                "summary": "STORE - Создание товара",
+                "operationId": "e8185e307706e2cd84bbcf5171e2f09d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Тестовый товар"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "testoviy-tovar"
+                                    },
+                                    "price": {
+                                        "type": "integer",
+                                        "example": 100500
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Тестовое описание"
+                                    },
+                                    "min_frequency": {
+                                        "type": "integer",
+                                        "example": 50
+                                    },
+                                    "max_frequency": {
+                                        "type": "integer",
+                                        "example": 19
+                                    },
+                                    "sensitivity": {
+                                        "type": "integer",
+                                        "example": 30
+                                    },
+                                    "image": {
+                                        "type": "string",
+                                        "example": "test.jpg"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Товар создан."
+                                        },
+                                        "product": {
+                                            "type": "obj",
+                                            "example": "{ id, всё что мы отправили }"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав = не знаешь о существовании страницы"
+                    },
+                    "422": {
+                        "description": "Валидация не пройдена"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/products/{identifier}": {
+            "get": {
+                "tags": [
+                    "Product"
+                ],
+                "summary": "SHOW - Информация о товаре",
+                "operationId": "ea53e45d6de4711578f7be4c03454583",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "description": "Можно искать как по id, так и по slug",
+                        "required": true,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": "1"
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Focal molestiae"
+                                                },
+                                                "slug": {
+                                                    "type": "string",
+                                                    "example": "focal-molestiae"
+                                                },
+                                                "price": {
+                                                    "type": "integer",
+                                                    "example": "22900"
+                                                },
+                                                "image": {
+                                                    "type": "string",
+                                                    "example": "/overhead/wired/0.jpg"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Expedita eos earum eaque culpa iure quae."
+                                                },
+                                                "attributes": {
+                                                    "type": "arr",
+                                                    "example": "[{...}, {...}, ...]"
+                                                },
+                                                "photos": {
+                                                    "type": "arr",
+                                                    "example": "['url', 'url', ...]"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/api/products/compare": {
+            "get": {
+                "tags": [
+                    "Product"
+                ],
+                "summary": "compare - Сравнение товаров",
+                "operationId": "27e9bc159349243b050f541ecc2170a1",
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "1,2,3"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": "1"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Focal molestiae"
+                                                    },
+                                                    "slug": {
+                                                        "type": "string",
+                                                        "example": "focal-molestiae"
+                                                    },
+                                                    "price": {
+                                                        "type": "integer",
+                                                        "example": "22900"
+                                                    },
+                                                    "image": {
+                                                        "type": "string",
+                                                        "example": "/overhead/wired/0.jpg"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Expedita eos earum eaque culpa iure quae."
+                                                    },
+                                                    "attributes": {
+                                                        "type": "obj",
+                                                        "example": "{...}"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "attributes": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/api/products/cart": {
+            "get": {
+                "tags": [
+                    "Product"
+                ],
+                "summary": "cart - Актуальные цены и ссылки на фото для списка товаров из корзины пользователя",
+                "operationId": "649033fb7808297d25fec00e2b3e63b2",
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "1,2,3"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": "1"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Focal molestiae"
+                                                    },
+                                                    "slug": {
+                                                        "type": "string",
+                                                        "example": "focal-molestiae"
+                                                    },
+                                                    "price": {
+                                                        "type": "integer",
+                                                        "example": "22900"
+                                                    },
+                                                    "image": {
+                                                        "type": "string",
+                                                        "example": "/overhead/wired/0.jpg"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/api/products/{id}": {
+            "patch": {
+                "tags": [
+                    "Product"
+                ],
+                "summary": "UPDATE - Изменение товара",
+                "description": "Это Patch, а не Put, так что можно отправлять на обновление отдельные свойства.",
+                "operationId": "f0caf1fe47821e6aad5d0c767b7476eb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Тестовый товар ред"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "testoviy-tovar-red"
+                                    },
+                                    "price": {
+                                        "type": "integer",
+                                        "example": 100600
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Тестовое описание ред"
+                                    },
+                                    "min_frequency": {
+                                        "type": "integer",
+                                        "example": 60
+                                    },
+                                    "max_frequency": {
+                                        "type": "integer",
+                                        "example": 29
+                                    },
+                                    "sensitivity": {
+                                        "type": "integer",
+                                        "example": 40
+                                    },
+                                    "image": {
+                                        "type": "string",
+                                        "example": "test-edited.jpg"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Товар обновлён."
+                                        },
+                                        "product": {
+                                            "type": "obj",
+                                            "example": "{ всё что мы отправили }"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Отправлен запрос без параметров"
+                    },
+                    "404": {
+                        "description": "Нет прав = не знаешь о существовании страницы"
+                    },
+                    "422": {
+                        "description": "Валидация не пройдена"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/products/{product}": {
+            "delete": {
+                "tags": [
+                    "Product"
+                ],
+                "summary": "DESTROY - Удаление товара",
+                "operationId": "1a0a353d0842ff4f9347bb66ec53e3ea",
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Товар удалён."
+                                        },
+                                        "product": {
+                                            "type": "obj",
+                                            "example": "{ товар }"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав, либо попытка удалить несуществующий товар"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/products/search/{query}": {
+            "get": {
+                "tags": [
+                    "Product"
+                ],
+                "summary": "search - Поиск товаров по ключевому слову",
+                "operationId": "5f9659bf2940bee8ce48f12fdb335149",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "sony"
+                        }
+                    },
+                    {
+                        "name": "paginate",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": "5"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": "1"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Focal molestiae"
+                                                    },
+                                                    "slug": {
+                                                        "type": "string",
+                                                        "example": "focal-molestiae"
+                                                    },
+                                                    "price": {
+                                                        "type": "integer",
+                                                        "example": "22900"
+                                                    },
+                                                    "image": {
+                                                        "type": "string",
+                                                        "example": "/overhead/wired/0.jpg"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Expedita eos earum eaque culpa iure quae."
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        },
+                                        "meta": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/api/users": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "INDEX - Список пользователей",
+                "operationId": "c457726701591d1183b53aa71fc13441",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Семён Семёныч"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "example": "example@mail.org"
+                                                    },
+                                                    "address": {
+                                                        "type": "string",
+                                                        "example": "ул. Кукурузная, д. 35"
+                                                    },
+                                                    "phone": {
+                                                        "type": "string",
+                                                        "example": "+79999999999"
+                                                    },
+                                                    "orders": {
+                                                        "type": "integer",
+                                                        "example": 3
+                                                    },
+                                                    "orders_total": {
+                                                        "type": "integer",
+                                                        "example": 161100
+                                                    },
+                                                    "permissions": {
+                                                        "type": "arr",
+                                                        "example": "[...]"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        },
+                                        "meta": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав = не знаешь о существовании страницы"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "STORE - Регистрация пользователя и выдача пары токенов",
+                "operationId": "592819a0265360b2014512d6dbfaf0e7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Василий Ложкин"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "vasya@mail.org"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "qwerty"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "example": "qwerty"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "access": {
+                                            "type": "string",
+                                            "example": "abcdefg..."
+                                        },
+                                        "access_exp": {
+                                            "type": "string",
+                                            "example": 1535153
+                                        },
+                                        "user": {
+                                            "type": "obj",
+                                            "example": "{id, ...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Валидация не пройдена",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Поле email обязательно. (and 1 more error)"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "email": {
+                                                    "type": "arr",
+                                                    "example": "['Поле email обязательно.']"
+                                                },
+                                                "password": {
+                                                    "type": "arr",
+                                                    "example": "['Поле пароль обязательно.']"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{user}": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "SHOW - Информация о пользователе",
+                "operationId": "d3a14968f8b7a072620c75c7c78ed6f8",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Семён Семёныч"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "example@mail.org"
+                                                },
+                                                "address": {
+                                                    "type": "string",
+                                                    "example": "ул. Кукурузная, д. 35"
+                                                },
+                                                "phone": {
+                                                    "type": "string",
+                                                    "example": "+79999999999"
+                                                },
+                                                "orders": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
+                                                "orders_total": {
+                                                    "type": "integer",
+                                                    "example": 161100
+                                                },
+                                                "permissions": {
+                                                    "type": "arr",
+                                                    "example": "[...]"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "example": "2024-04-09T16:08:39.000000Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав = не знаешь о существовании страницы"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/users/{id}/password": {
+            "patch": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "changePassword - Изменение пароля",
+                "operationId": "ae7266b3a8dea94874e25be9ce2e1299",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "old_password": {
+                                        "type": "string",
+                                        "example": "qwerty"
+                                    },
+                                    "new_password": {
+                                        "type": "string",
+                                        "example": "12345"
+                                    },
+                                    "new_password_confirmation": {
+                                        "type": "string",
+                                        "example": "12345"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Пароль изменён."
+                                        },
+                                        "user": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден, либо нет прав."
+                    },
+                    "422": {
+                        "description": "Валидация не пройдена"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/users/{id}/address": {
+            "patch": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "changeAddress - Изменение адреса",
+                "operationId": "787598a620bf9a838cc08b02fa93e906",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "address": {
+                                        "type": "string",
+                                        "example": "г. Череповец, ул. Кирпичная, д. 3, кв. 1"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Адрес изменён."
+                                        },
+                                        "user": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден, либо нет прав."
+                    },
+                    "422": {
+                        "description": "Валидация не пройдена"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/users/{id}/profile": {
+            "patch": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "changeProfile - Изменение имени и телефона",
+                "operationId": "312bc0e86a98f0a75e83afdd8bdc812c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Семён семёныч"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "+70123456789"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Имя и телефон изменены."
+                                        },
+                                        "user": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден, либо нет прав."
+                    },
+                    "422": {
+                        "description": "Валидация не пройдена"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/users/{id}/email": {
+            "patch": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "changeEmail - Изменение email",
+                "description": "password - действующий пароль для подтверждения операции",
+                "operationId": "f4f28a6b2cf871503d670fc0992d943e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "example": "example@mail.org"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "qwerty"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Email изменён."
+                                        },
+                                        "user": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден, либо нет прав."
+                    },
+                    "422": {
+                        "description": "Валидация не пройдена, либо неверный пароль."
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        },
+        "/api/users/{id}": {
+            "delete": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "DESTROY - Удаление пользователя",
+                "operationId": "fa56cffde745d3f152f95cbacd936c0b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Пользователь удалён."
+                                        },
+                                        "user": {
+                                            "type": "obj",
+                                            "example": "{...}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет прав, либо пользователь не существует"
+                    }
+                },
+                "security": [
+                    {
+                        "jwt": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "jwt": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        }
+    }
+}

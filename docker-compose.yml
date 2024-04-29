@@ -1,0 +1,52 @@
+services:
+    nginx:
+        image: "nginx:1.26-alpine"
+        ports:
+            - "80:80"
+        volumes:
+            - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+            - .:/var/www/laravel
+        networks:
+            - soundhead
+        depends_on:
+            - php
+
+    php:
+        image: php:8.3.6-fpm-alpine
+        user: ${DOCKER_USER}
+        volumes:
+            - .:/var/www/laravel
+        working_dir: /var/www/laravel
+        networks:
+            - soundhead
+
+    lara:
+        image: php:8.3.6-fpm-alpine
+        user: ${DOCKER_USER}
+        ports:
+            - 80:8000
+        volumes:
+            - .:/laravel
+            - ./storage/app/public:/laravel/public/storage # docker не читает симлинки
+        working_dir: /laravel
+        command: php artisan serve --host=0.0.0.0
+
+    composer:
+        image: composer:2.7.4
+        user: ${DOCKER_USER}
+        volumes:
+            - .:/laravel
+        working_dir: /laravel
+        entrypoint: ["composer", "--ignore-platform-reqs"]
+
+    artisan:
+        image: php:8.3.6-fpm-alpine
+        user: ${DOCKER_USER}
+        volumes:
+            - .:/laravel
+        working_dir: /laravel
+        entrypoint: ["php", "artisan"]
+
+networks:
+    soundhead:
+        external: true
