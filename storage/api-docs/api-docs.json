@@ -1004,13 +1004,22 @@
                                                 "type": "object"
                                             }
                                         },
-                                        "links": {
-                                            "type": "obj",
-                                            "example": "{...}"
-                                        },
                                         "meta": {
-                                            "type": "obj",
-                                            "example": "{...}"
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": "1"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": "5"
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": "100"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"

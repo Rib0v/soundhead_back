@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\PermissionService;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,6 +15,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         //
+        // $this->app->register(\Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class);
+        // ServiceProvider::addProviderToBootstrapFile(\Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class);
     }
 
     /**
@@ -21,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // $this->app->register(\Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class);
+        // ServiceProvider::addProviderToBootstrapFile(\Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class);
         Gate::define('content-manager', function (null $user, ?string $token): bool {
 
             return PermissionService::checkEditContentPermission($token);
