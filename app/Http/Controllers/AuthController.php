@@ -59,7 +59,7 @@ class AuthController extends Controller
             'access' => $tokens['access'],
             'access_exp' => $tokens['access_exp'],
         ])
-            ->cookie('refresh', $tokens['refresh'], $tokens['refresh_minutes'], '/', '192.168.1.161', false, true);
+            ->cookie('refresh', $tokens['refresh'], $tokens['refresh_minutes'], '/', $service->getAppUrl(), false, true);
     }
 
     /**
@@ -156,17 +156,26 @@ class AuthController extends Controller
      *   @OA\Response(response=403, description="Refresh токен просрочен, либо недействителен")
      * )
      */
-    public function refresh(Request $request, JWTAuthService $jwt)
+    public function refresh(Request $request, JWTAuthService $jwt, AuthService $service)
     {
         try {
             $refreshed = $jwt->refresh($request->cookie('refresh'));
 
             return response([
+
                 'user_id' => $refreshed['decoded']->sub,
                 'access' => $refreshed['tokens']['access'],
                 'access_exp' => $refreshed['tokens']['access_exp']
-            ])
-                ->cookie('refresh', $refreshed['tokens']['refresh'], $refreshed['tokens']['refresh_minutes'], '/', '192.168.1.161', false, true);
+
+            ])->cookie(
+                'refresh',
+                $refreshed['tokens']['refresh'],
+                $refreshed['tokens']['refresh_minutes'],
+                '/',
+                $service->getAppUrl(),
+                false,
+                true
+            );
         } catch (\Exception $e) {
             return response(['message' => $e->getMessage()], $e->getCode())->withoutCookie('refresh');
         }
