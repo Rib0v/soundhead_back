@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Product\UpdateRequest;
 use App\Http\Resources\Product\CartResource;
 use App\Http\Resources\Product\IndexResource;
-use App\Http\Resources\Product\SingleResource;
 use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Http\Request;
@@ -45,14 +44,21 @@ class ProductController extends Controller
      *           @OA\Property(property="description", type="string", example="Expedita eos earum eaque culpa iure quae."),
      *         ),
      *       ),
-     *       @OA\Property(property="links", type="obj", example="{...}"),
-     *       @OA\Property(property="meta", type="obj", example="{...}")
+     *       @OA\Property(property="meta", type="object",
+     *         @OA\Property(property="current_page", type="integer", example="1"),
+     *         @OA\Property(property="last_page", type="integer", example="5"),
+     *         @OA\Property(property="total", type="integer", example="100"),
+     *       )
      *     )
      *   )
      * )
      */
-    public function index(Request $request)
+    public function index(Request $request, ProductService $service)
     {
+        if (!count($request->query())) {
+            return $service->getFirstPage();
+        }
+
         $perPage = $request->query('perpage', '24');
 
         $products = Product::query()
@@ -61,7 +67,10 @@ class ProductController extends Controller
             ->sort($request)
             ->paginate($perPage);
 
-        return IndexResource::collection($products);
+        $data = IndexResource::collection($products)->toArray($request);
+        $meta = $service->getMeta($products);
+
+        return compact('data', 'meta');
     }
 
     /**
@@ -94,17 +103,17 @@ class ProductController extends Controller
      *   @OA\Response(response=404, description="Not Found")
      * )
      */
-    public function show(int|string $identifier)
+    public function show(int|string $identifier, ProductService $service)
     {
         /**
          * Если передано число - ищет по id,
          * если строка - по slug
          */
         try {
-            $identifier = +$identifier;
-            return new SingleResource(Product::findOrFail($identifier));
+            $id = +$identifier;
+            return response(['data' => $service->getById($id)]);
         } catch (\Throwable $th) {
-            return new SingleResource(Product::where('slug', $identifier)->firstOrFail());
+            return response(['data' => $service->getBySlug($identifier)]);
         }
     }
 
@@ -210,7 +219,7 @@ class ProductController extends Controller
      *   @OA\Response(response=422, description="Валидация не пройдена"),
      * )
      */
-    public function store(UpdateRequest $request)
+    public function store(UpdateRequest $request, ProductService $service)
     {
         if (Gate::denies('content-manager', [$request->bearerToken()])) {
             abort(404, 'Not found');
@@ -218,6 +227,8 @@ class ProductController extends Controller
 
         $validated = $request->validated();
         $createdProduct = Product::create($validated);
+
+        $service->cacheProduct($createdProduct->id);
 
         return response(['message' => 'Товар создан.', 'product' => $createdProduct]);
     }
@@ -259,7 +270,7 @@ class ProductController extends Controller
      *   @OA\Response(response=422, description="Валидация не пройдена"),
      * )
      */
-    public function update(UpdateRequest $request, Product $product)
+    public function update(UpdateRequest $request, Product $product, ProductService $service)
     {
         if (Gate::denies('content-manager', [$request->bearerToken()])) {
             abort(404, 'Not found');
@@ -267,13 +278,14 @@ class ProductController extends Controller
 
         $validated = $request->validated();
 
-        if (!$validated) {
+        if (empty($validated)) {
             return response(['message' => 'Не предоставлено данных для обновления'], 400);
         }
 
         Product::where('id', $product->id)->update($validated);
-
         $product->refresh();
+
+        $service->cacheProduct($product->id);
 
         return response(['message' => 'Товар обновлён.', 'product' => $product]);
     }

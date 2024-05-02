@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Http\Resources\Product\SingleResource;
 use App\Models\Attribute;
 use App\Models\Permission;
 use App\Models\PermissionUser;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Models\Value;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Redis;
 
 class DatabaseSeeder extends Seeder
 {
@@ -47,6 +49,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->clearProductsCache();
 
         User::factory()->create([
             'name' => 'Семён Семёныч',
@@ -72,6 +75,8 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_users', 'description' => 'Может редактировать пользователей и выдавать им права на различные действия.'],
         ]);
 
+        $this->cachePermissionsIds();
+
         PermissionUser::factory()->createMany([
             ['user_id' => 1, 'permission_id' => 1],
             ['user_id' => 1, 'permission_id' => 2],
@@ -79,10 +84,37 @@ class DatabaseSeeder extends Seeder
         ]);
 
         Attribute::factory()->createMany($this->attributes);
+        Redis::set('product_attributes', Attribute::pluck('slug'));
 
         $this->createValues();
 
         $this->createProducts(100);
+    }
+
+    private function clearProductsCache(): void
+    {
+        $prefix = config('database.redis.options.prefix');
+        foreach (Redis::keys('product:*') as $key) {
+            $key = ltrim($key, $prefix);
+            Redis::del($key);
+        }
+        foreach (Redis::keys('product_id:*') as $key) {
+            $key = ltrim($key, $prefix);
+            Redis::del($key);
+        }
+
+        Redis::del('products_first_page');
+    }
+
+    private function cachePermissionsIds(): void
+    {
+        $permissionList = [];
+
+        foreach (Permission::all() as $permission) {
+            $permissionList[$permission['name']] = $permission['id'];
+        }
+
+        Redis::set('user_permissions', $permissionList);
     }
 
     private function createValues(): void
@@ -99,8 +131,9 @@ class DatabaseSeeder extends Seeder
 
     private function createProducts(int $quantity): void
     {
-        for ($i = 1; $i <= $quantity; $i++) {
-            $this->createProductWithAttributes($i);
+        for ($id = 1; $id <= $quantity; $id++) {
+            $this->createProductWithAttributes($id);
+            $this->cacheProduct($id);
         }
     }
 
@@ -126,12 +159,24 @@ class DatabaseSeeder extends Seeder
         return strtolower(str_replace(' ', '-', $name));
     }
 
+    private function cacheProduct(int $id): void
+    {
+        $product = new SingleResource(Product::findOrFail($id));
+        Redis::set("product:$id", $product);
+        Redis::set("product_id:{$product->slug}", $id);
+    }
+
     private function createProductWithPhotos(int $productId, int $brandId, string $productType): void
     {
         $name = $this->generateName($brandId);
         $slug = $this->nameToSlug($name);
 
-        Product::factory()->create(['name' => $name, 'slug' => $slug, 'image' => $this->thumbnails[$productType]]);
+        Product::factory()->create([
+            'name' => $name,
+            'slug' => $slug,
+            'image' => $this->thumbnails[$productType]
+        ]);
+
 
         foreach ($this->photos[$productType] as $photo) {
             Photo::factory()->create([

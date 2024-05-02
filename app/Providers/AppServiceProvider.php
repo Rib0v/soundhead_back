@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\PermissionService;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

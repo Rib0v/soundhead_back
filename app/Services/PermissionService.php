@@ -3,18 +3,19 @@
 namespace App\Services;
 
 use App\Models\Permission;
+use Illuminate\Support\Facades\Redis;
 
 class PermissionService
 {
-    /**
-     * Можно либо permission_id вынести
-     * в конфиг/enums и брать оттуда,
-     * либо закешировать таблицу permissions
-     * и брать из неё. Пока сделал 2й вариант.
-     **/
     private static function getPermissionId(string $permission): int
     {
-        return Permission::where('name', $permission)->firstOrFail()->id;
+        $permissions = Redis::get('user_permissions');
+
+        if (!isset($permissions[$permission])) {
+            throw new \Exception("Invalid permission name");
+        }
+
+        return $permissions[$permission];
     }
 
     /**
