@@ -20,8 +20,8 @@ class DatabaseSeeder extends Seeder
 {
     private array $attributes;
     private array $values;
-    private array $thumbnails;
     private array $photos;
+    private array $typesCounter;
 
     public function __construct()
     {
@@ -29,8 +29,8 @@ class DatabaseSeeder extends Seeder
 
         $this->attributes = $attributes;
         $this->values = $values;
-        $this->thumbnails = $thumbnails;
         $this->photos = $photos;
+        $this->typesCounter = $typesCounter;
     }
 
     /**
@@ -166,24 +166,27 @@ class DatabaseSeeder extends Seeder
         Redis::set("product_id:{$product->slug}", $id);
     }
 
-    private function createProductWithPhotos(int $productId, int $brandId, string $productType): void
+    private function createProductWithPhotos(int $productId, int $brandId, string $form, string $wire): void
     {
         $name = $this->generateName($brandId);
         $slug = $this->nameToSlug($name);
+        $count = $this->typesCounter[$wire][$form];
+        $lastPhoto = $this->photos[$wire][$form][$count - 1];
 
         Product::factory()->create([
             'name' => $name,
             'slug' => $slug,
-            'image' => $this->thumbnails[$productType]
+            'image' => "/$wire/$form/$count/0.webp"
         ]);
 
-
-        foreach ($this->photos[$productType] as $photo) {
+        for ($i = 1; $i <= $lastPhoto; $i++) {
             Photo::factory()->create([
-                'url' => $photo,
+                'url' => "/$wire/$form/$count/$i.webp",
                 'product_id' => $productId,
             ]);
         }
+
+        $this->typesCounter[$wire][$form] = $count < 5 ? ++$count : 1;
     }
 
     private function createProductWithAttributes(int $productId): void
@@ -202,32 +205,32 @@ class DatabaseSeeder extends Seeder
         $this->createProductAttribute($productId, rand(29, 30)); // deNoise
 
         if ($form === 21) { // Вставные
-            if ($wire === 24) { // если проводные
-                $this->createProductWithPhotos($productId, $brand, 'inear_wired');
-            } else { // если беспроводные
-                $this->createProductWithPhotos($productId, $brand, 'inear_wireless');
+            if ($wire === 24) { // Проводные
+                $this->createProductWithPhotos($productId, $brand, 'inear', 'wired');
+            } else { // Беспроводные
+                $this->createProductWithPhotos($productId, $brand, 'inear', 'wireless');
             }
         }
 
         if ($form === 22) { // Накладные
-            if ($wire === 24) { // если проводные
-                $this->createProductWithPhotos($productId, $brand, 'overhead_wired');
-            } else { // если беспроводные
-                $this->createProductWithPhotos($productId, $brand, 'overhead_wireless');
+            if ($wire === 24) { // Проводные
+                $this->createProductWithPhotos($productId, $brand, 'overhead', 'wired');
+            } else { // Беспроводные
+                $this->createProductWithPhotos($productId, $brand, 'overhead', 'wireless');
             }
         }
 
         if ($form === 23) { // Полноразмерные
-            if ($wire === 24) { // если проводные
-                $this->createProductWithPhotos($productId, $brand, 'fullsize_wired');
-            } else { // если беспроводные
-                $this->createProductWithPhotos($productId, $brand, 'fullsize_wireless');
+            if ($wire === 24) { // Проводные
+                $this->createProductWithPhotos($productId, $brand, 'fullsize', 'wired');
+            } else { // Беспроводные
+                $this->createProductWithPhotos($productId, $brand, 'fullsize', 'wireless');
             }
         }
 
-        if ($wire === 24) { // если проводные
+        if ($wire === 24) { // Проводные
             $this->createProductAttribute($productId, rand(31, 34)); // wireLength
-        } else { // если беспроводные
+        } else { // Беспроводные
             $this->createProductAttribute($productId, rand(35, 40)); // bluetooth
             $this->createProductAttribute($productId, rand(41, 44)); // connector
             $this->createProductAttribute($productId, rand(45, 46)); // fastCharge

@@ -18,7 +18,7 @@ class AddConfig extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Generate secret key & create config';
 
     public static function random($length = 16)
     {
