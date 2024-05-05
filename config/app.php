@@ -131,4 +131,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'products_per_page_default' => env('APP_PRODUCTS_PER_PAGE_DEFAULT', 12),
+
 ];

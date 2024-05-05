@@ -55,11 +55,11 @@ class ProductController extends Controller
      */
     public function index(Request $request, ProductService $service)
     {
-        if (!count($request->query())) {
-            return $service->getFirstPage();
+        if ($service->isRequestWithoutFilters($request)) {
+            return $service->getCachedPage($request);
         }
 
-        $perPage = $request->query('perpage', '24');
+        $perPage = $request->query('perpage', config('app.products_per_page_default'));
 
         $products = Product::query()
             ->filterOptions($request)

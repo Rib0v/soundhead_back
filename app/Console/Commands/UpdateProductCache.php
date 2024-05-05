@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Resources\Product\IndexResource;
 use App\Http\Resources\Product\SingleResource;
 use App\Models\Product;
 use Illuminate\Console\Command;
@@ -38,8 +39,10 @@ class UpdateProductCache extends Command
             $key = ltrim($key, $prefix);
             Redis::del($key);
         }
-
-        Redis::del('products_first_page');
+        foreach (Redis::keys('productlist_page:*') as $key) {
+            $key = ltrim($key, $prefix);
+            Redis::del($key);
+        }
 
         $lastProduct = Product::max('id');
 
@@ -47,6 +50,28 @@ class UpdateProductCache extends Command
             $product = new SingleResource(Product::findOrFail($id));
             Redis::set("product:$id", $product);
             Redis::set("product_id:{$product->slug}", $id);
+        }
+
+        $lastPage = Product::paginate(config('app.products_per_page_default'))->lastPage();
+
+        for ($page = 1; $page <= $lastPage; $page++) {
+
+            $products = Product::paginate(
+                config('app.products_per_page_default'),
+                ['*'],
+                'page',
+                $page
+            );
+
+            $data = IndexResource::collection($products);
+
+            $meta = [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'total' => $products->total(),
+            ];
+
+            Redis::set("productlist_page:$page", compact('data', 'meta'));
         }
     }
 }

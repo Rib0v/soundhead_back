@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Http\Resources\Product\IndexResource;
 use App\Http\Resources\Product\SingleResource;
 use App\Models\Attribute;
 use App\Models\Permission;
@@ -88,7 +89,9 @@ class DatabaseSeeder extends Seeder
 
         $this->createValues();
 
-        $this->createProducts(100);
+        $this->createProducts(102);
+
+        $this->cacheProductLists();
     }
 
     private function clearProductsCache(): void
@@ -102,8 +105,35 @@ class DatabaseSeeder extends Seeder
             $key = ltrim($key, $prefix);
             Redis::del($key);
         }
+        foreach (Redis::keys('productlist_page:*') as $key) {
+            $key = ltrim($key, $prefix);
+            Redis::del($key);
+        }
+    }
 
-        Redis::del('products_first_page');
+    private function cacheProductLists(): void
+    {
+        $lastPage = Product::paginate(config('app.products_per_page_default'))->lastPage();
+
+        for ($page = 1; $page <= $lastPage; $page++) {
+
+            $products = Product::paginate(
+                config('app.products_per_page_default'),
+                ['*'],
+                'page',
+                $page
+            );
+
+            $data = IndexResource::collection($products);
+
+            $meta = [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'total' => $products->total(),
+            ];
+
+            Redis::set("productlist_page:$page", compact('data', 'meta'));
+        }
     }
 
     private function cachePermissionsIds(): void
