@@ -8,6 +8,8 @@ on:
 jobs:
   Deploy-dev:
     runs-on: ubuntu-22.04
+    environment:
+      name: ribov
     steps:
       - name: deploy
         uses: appleboy/ssh-action@v1.0.3
