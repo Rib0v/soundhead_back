@@ -20,6 +20,7 @@ jobs:
           script: |
             cd ${{ vars.LOCATION_BACK_DEV }}
             echo "Start"
+            set -e
             # php artisan down
             sh deploy.sh -dev
             # php artisan up
