@@ -1,9 +1,9 @@
-name: Deploy dev branch
+name: Deploy master branch
 
 on:
   push:
     branches:
-      - dev
+      - master
 
 jobs:
   Deploy-dev:
@@ -21,7 +21,5 @@ jobs:
             cd ${{ vars.LOCATION_BACK_DEV }}
             echo "Start"
             set -e
-            # php artisan down
-            sh deploy.sh -dev
-            # php artisan up
+            sh deploy.sh
             echo "Finish"
