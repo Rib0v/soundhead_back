@@ -21,4 +21,10 @@ class AuthService
     {
         return array_column($user->permissionUsers->toArray(), 'permission_id');
     }
+
+    public function getAppUrl(): string
+    {
+        $url = config('app.url');
+        return preg_replace('/(http:\/\/|https:\/\/)/', '', $url);
+    }
 }

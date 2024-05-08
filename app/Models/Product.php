@@ -7,6 +7,7 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Redis;
 
 class Product extends Model
 {
@@ -23,11 +24,6 @@ class Product extends Model
         'image',
     ];
 
-    // public function productValues()
-    // {
-    //     return $this->hasMany(ProductValue::class);
-    // }
-
     public function photos(): HasMany
     {
         return $this->hasMany(Photo::class);
@@ -38,26 +34,29 @@ class Product extends Model
         return $this->belongsToMany(Value::class, 'product_values');
     }
 
+    /**
+     * @param  Builder|\Illuminate\Database\Query\Builder $query
+     */
     public function scopeFiltered(Builder $query)
     {
         $query->whereIn('products.id', [1, 2]);
     }
 
+    /** @param  Builder|\Illuminate\Database\Query\Builder $query */
     public function scopeFilterOptions(Builder $query, $request)
     {
-        // TODO Категории меняются редко, нужно будет закешировать
-        $whitelist = Attribute::pluck('slug')->toArray();
+        $whitelist = Redis::get('product_attributes');
 
         $allowedOptions = Utils::strParamsToArr($request->only($whitelist));
 
         foreach ($allowedOptions as $value) {
-
             $query->whereHas('values', function ($query) use ($value) {
                 $query->whereIn('values.id', $value);
             });
         }
     }
 
+    /** @param  Builder|\Illuminate\Database\Query\Builder $query */
     public function scopeFilterRanges(Builder $query, $request)
     {
         $applyRange = function (string $slug, string $columnName) use ($query, $request): void {
@@ -76,6 +75,7 @@ class Product extends Model
     }
 
 
+    /** @param  Builder|\Illuminate\Database\Query\Builder $query */
     public function scopeSort(Builder $query, $request)
     {
         if ($request->has('sort')) {

@@ -80,65 +80,29 @@ $fastCharge = ['Да', 'Нет'];
 
 $values = [$brands, $forms, $wireTypes, $acousticTypes, $deNoise, $wireLength, $bluetooth, $connector, $fastCharge];
 
-// print_r($values);
-
-$thumbnails = [
-    'fullsize_wired' => '/fullsize/wired/0.webp',
-    'fullsize_wireless' => '/fullsize/wireless/0.jpg',
-    'overhead_wired' => '/overhead/wired/0.jpg',
-    'overhead_wireless' => '/overhead/wireless/0.webp',
-    'inear_wired' => '/inear/wired/0.webp',
-    'inear_wireless' => '/inear/wireless/0.jpg',
+$photos = [
+    'wired' => [
+        'fullsize' => [5, 6, 8, 8, 4],
+        'inear' => [5, 5, 7, 7, 5],
+        'overhead' => [6, 5, 4, 4, 6],
+    ],
+    'wireless' => [
+        'fullsize' => [8, 7, 6, 5, 4],
+        'inear' => [6, 5, 3, 5, 4],
+        'overhead' => [5, 6, 8, 5, 8],
+    ]
 ];
 
-$photos = [
-    'fullsize_wired' => [
-        '/fullsize/wired/1.webp',
-        '/fullsize/wired/2.webp',
-        '/fullsize/wired/3.webp',
-        '/fullsize/wired/4.webp',
-        '/fullsize/wired/5.webp',
-    ],
-    'fullsize_wireless' => [
-        '/fullsize/wireless/1.webp',
-        '/fullsize/wireless/2.webp',
-        '/fullsize/wireless/3.webp',
-        '/fullsize/wireless/4.webp',
-        '/fullsize/wireless/5.webp',
-        '/fullsize/wireless/6.webp',
-        '/fullsize/wireless/7.webp',
-        '/fullsize/wireless/8.webp',
-    ],
-    'overhead_wired' => [
-        '/overhead/wired/1.webp',
-        '/overhead/wired/2.webp',
-        '/overhead/wired/3.webp',
-        '/overhead/wired/4.webp',
-        '/overhead/wired/5.webp',
-        '/overhead/wired/6.webp',
 
+$typesCounter = [
+    'wired' => [
+        'fullsize' => 1,
+        'inear' => 1,
+        'overhead' => 1,
     ],
-    'overhead_wireless' => [
-        '/overhead/wireless/1.webp',
-        '/overhead/wireless/2.webp',
-        '/overhead/wireless/3.webp',
-        '/overhead/wireless/4.webp',
-        '/overhead/wireless/5.webp',
-
-    ],
-    'inear_wired' => [
-        '/inear/wired/1.jpg',
-        '/inear/wired/2.jpg',
-        '/inear/wired/3.jpg',
-        '/inear/wired/4.jpg',
-        '/inear/wired/5.jpg',
-    ],
-    'inear_wireless' => [
-        '/inear/wireless/1.webp',
-        '/inear/wireless/2.webp',
-        '/inear/wireless/3.webp',
-        '/inear/wireless/4.webp',
-        '/inear/wireless/5.webp',
-        '/inear/wireless/6.webp',
-    ],
+    'wireless' => [
+        'fullsize' => 1,
+        'inear' => 1,
+        'overhead' => 1,
+    ]
 ];

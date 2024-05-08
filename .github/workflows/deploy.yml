@@ -1,0 +1,25 @@
+name: Deploy master branch
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  Deploy-dev:
+    runs-on: ubuntu-22.04
+    environment:
+      name: ribov
+    steps:
+      - name: deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VDS_IP }}
+          username: ${{ secrets.VDS_USER }}
+          key: ${{ secrets.VDS_KEY }}
+          script: |
+            cd ${{ vars.LOCATION_BACK_DEV }}
+            echo "Start"
+            set -e
+            sh deploy.sh
+            echo "Finish"

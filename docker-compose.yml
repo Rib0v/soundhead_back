@@ -12,40 +12,74 @@ services:
             - php
 
     php:
-        image: php:8.3.6-fpm-alpine
+        build:
+            context: docker
+            dockerfile: php.Dockerfile
         user: ${DOCKER_USER}
         volumes:
             - .:/var/www/laravel
-        working_dir: /var/www/laravel
         networks:
             - soundhead
+        depends_on:
+            - redis
+            - postgres
 
     lara:
-        image: php:8.3.6-fpm-alpine
+        build:
+            context: docker
+            dockerfile: php.Dockerfile
         user: ${DOCKER_USER}
         ports:
             - 80:8000
         volumes:
-            - .:/laravel
-            - ./storage/app/public:/laravel/public/storage # docker не читает симлинки
-        working_dir: /laravel
+            - .:/var/www/laravel
+            - ./storage/app/public:/var/www/laravel/public/storage
         command: php artisan serve --host=0.0.0.0
+        networks:
+            - soundhead
+        depends_on:
+            - redis
+            - postgres
 
     composer:
         image: composer:2.7.4
         user: ${DOCKER_USER}
         volumes:
-            - .:/laravel
-        working_dir: /laravel
+            - .:/var/www/laravel
+        working_dir: /var/www/laravel
         entrypoint: ["composer", "--ignore-platform-reqs"]
 
     artisan:
-        image: php:8.3.6-fpm-alpine
+        build:
+            context: docker
+            dockerfile: php.Dockerfile
         user: ${DOCKER_USER}
         volumes:
-            - .:/laravel
-        working_dir: /laravel
+            - .:/var/www/laravel
         entrypoint: ["php", "artisan"]
+        networks:
+            - soundhead
+        depends_on:
+            - redis
+            - postgres
+
+    redis:
+        image: redis:6.0.20-alpine
+        user: ${DOCKER_USER}
+        networks:
+            - soundhead
+
+    postgres:
+        image: postgres:14.11-alpine
+        environment:
+            - POSTGRES_DB=soundhead
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+        volumes:
+            - ./docker/tmp-postgres:/var/lib/postgresql/data
+        networks:
+            - soundhead
+        
 
 networks:
     soundhead:
