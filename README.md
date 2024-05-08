@@ -14,31 +14,47 @@ Backend-часть интернет-магазина на `Laravel`. Связь 
 
 # Как развернуть локально
 
+*Примечание: для запуска приложения требуется* `redis` *и расширение* `phpredis`.
+
+Устанавливаем зависимости:
+
 ```bash
-# Устанавливаем зависимости
 composer install
+```
 
-# Копируем файл конфига
+Копируем файл конфига:
+
+```bash
 cp .env.example .env
+```
 
-# в .env указываем порт, на котором будет
-# запущено приложение. Это нужно только для
-# правильной генерации путей к фотографиям.
-APP_PORT=8000
+Генерируем ключ приложения:
 
-# Генерируем ключ приложения
+```bash
 php artisan key:generate
+```
 
-# Генерируем ключ и конфиг для jwt-авторизации
+Генерируем ключ и конфиг для jwt-авторизации:
+
+```bash
 php artisan jwt:conf
+```
 
-# Создаём в /public симлинк на storage/app/public/
+Создаём в `/public` симлинк на `storage/app/public/` 
+
+```bash
 php artisan storage:link
+```
 
-# Накатываем миграции + наполняем контентом
+Накатываем миграции и наполняем контентом:
+
+```bash
 php artisan migrate --seed
+```
 
-# Запускаем сервер
+Запускаем сервер:
+
+```bash
 php artisan serve
 ```
 
@@ -50,24 +66,39 @@ php artisan serve
 
 ### Установка
 
+Копируем файл конфига:
+
 ```bash
-# Копируем файл конфига
-cp .env.example .env
+cp .env.doc.example .env
+```
 
-# Записываем id хоста в переменную, чтобы
-# не было проблем с правами доступа к файлам
+Записываем id хоста в переменную, чтобы не было проблем с правами доступа к файлам:
+
+```bash
 echo -e "\nDOCKER_USER=$(id -u):$(id -g)" >> .env
+```
 
-# Устанавливаем зависимости
+Устанавливаем зависимости:
+
+```bash
 sudo docker compose run --rm composer install
+```
 
-# Генерируем ключ приложения
+Генерируем ключ приложения:
+
+```bash
 sudo docker compose run --rm artisan key:generate
+```
 
-# Генерируем ключ и конфиг для jwt-авторизации
+Генерируем ключ и конфиг для jwt-авторизации:
+
+```bash
 sudo docker compose run --rm artisan jwt:conf
+```
 
-# Накатываем миграции + наполняем контентом
+Накатываем миграции и наполняем контентом:
+
+```bash
 sudo docker compose run --rm artisan migrate --seed
 ```
 
@@ -76,15 +107,13 @@ sudo docker compose run --rm artisan migrate --seed
 По умолчанию ресурс будет доступен на 80 порту `http://localhost/` 
 
 ```bash
-# Запускаем сервер - только бэк 
 sudo docker compose up lara
 ```
 
 ### Запуск совместно с фронтом
 
-Сначала нужно запустить [frontend-часть](https://github.com/Rib0v/soundhead_front). После этого запускаем nginx. Сервер будет доступен на 80 порту `http://localhost/`
+Сначала нужно запустить [frontend-часть](https://github.com/Rib0v/soundhead_front). После этого запускаем `nginx`. Сервер будет доступен на 80 порту `http://localhost/` 
 
 ```bash
-# Стартуем сервер, когда фронтенд уже запущен
 sudo docker compose up nginx
 ```
