@@ -352,7 +352,11 @@ class ProductController extends Controller
     public function search(string $query, Request $request)
     {
         $paginate = $request->query('paginate', '20');
-        $products = Product::where('name', 'LIKE', "%$query%")->paginate($paginate);
+
+        // Для сохранения совместимости с SQLITE
+        $caseInsensitiveOperator = config('database.default') === 'pgsql' ? 'ILIKE' : 'LIKE';
+
+        $products = Product::where('name', $caseInsensitiveOperator, "%$query%")->paginate($paginate);
 
         return IndexResource::collection($products);
     }
