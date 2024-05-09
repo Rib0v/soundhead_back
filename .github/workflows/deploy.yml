@@ -18,7 +18,7 @@ jobs:
           username: ${{ secrets.VDS_USER }}
           key: ${{ secrets.VDS_KEY }}
           script: |
-            cd ${{ vars.LOCATION_BACK_DEV }}
+            cd ${{ vars.LOCATION_BACK }}
             echo "Start"
             set -e
             sh deploy.sh
