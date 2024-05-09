@@ -78,7 +78,19 @@ cp .env.doc.example .env
 echo -e "\nDOCKER_USER=$(id -u):$(id -g)" >> .env
 ```
 
-Устанавливаем зависимости:
+Создаём сеть:
+
+```bash
+sudo docker network create soundhead
+```
+
+Собираем образы:
+
+```bash
+sudo docker compose build
+```
+
+Устанавливаем зависимости, на сообщение `Class "Redis" not found` не обращаем внимание 
 
 ```bash
 sudo docker compose run --rm composer install
@@ -104,7 +116,7 @@ sudo docker compose run --rm artisan migrate --seed
 
 ### Запуск бэка отдельно
 
-По умолчанию ресурс будет доступен на 80 порту `http://localhost/` 
+По умолчанию ресурс будет доступен на 80 порту [http://localhost/](http://localhost/) 
 
 ```bash
 sudo docker compose up lara
@@ -112,7 +124,7 @@ sudo docker compose up lara
 
 ### Запуск совместно с фронтом
 
-Сначала нужно запустить [frontend-часть](https://github.com/Rib0v/soundhead_front). После этого запускаем `nginx`. Сервер будет доступен на 80 порту `http://localhost/` 
+Сначала нужно запустить [frontend-часть](https://github.com/Rib0v/soundhead_front). После этого запускаем `nginx`. Сервер будет доступен на 80 порту [http://localhost/](http://localhost/) 
 
 ```bash
 sudo docker compose up nginx
