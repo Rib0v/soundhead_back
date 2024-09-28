@@ -1,0 +1,1322 @@
+openapi: 3.0.0
+info:
+  title: 'OpenApi спецификация'
+  version: '1.0'
+paths:
+  /api/attributes:
+    get:
+      tags:
+        - Attribute
+      summary: 'INDEX - Список всех доступных характеристик товаров'
+      operationId: 126ee4d87e6a29e2490a11d1799ade37
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttributeIndex'
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: 'LOGIN - Аутентификация пользователя и выдача пары токенов'
+      operationId: 5771054e4371351dbd292fb907b149b2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequestBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          description: 'Неверный логин или пароль.'
+        '422':
+          description: 'Валидация не пройдена'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponseNotValid'
+  /api/auth/checkacc:
+    get:
+      tags:
+        - Auth
+      summary: 'checkAccess - Проверка access токена'
+      operationId: 9b17e7cf7ee85e2b165ede2c56c96faf
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthJWTServiceCheck'
+        '401':
+          description: 'Валидация провалена'
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Токен не найден.' }
+                type: object
+        '403':
+          description: 'Токен просрочен'
+      security:
+        -
+          jwt: []
+  /api/auth/checkref:
+    get:
+      tags:
+        - Auth
+      summary: 'checkRefresh - Проверка refresh токена'
+      description: 'Refresh токен хранится в куках'
+      operationId: c61639f24f468873d26658e2576c273e
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthJWTServiceCheck'
+        '401':
+          description: 'Валидация провалена'
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Токен не найден.' }
+                type: object
+        '403':
+          description: 'Токен просрочен, либо недействителен'
+      security:
+        -
+          jwt: []
+  /api/auth/refresh:
+    get:
+      tags:
+        - Auth
+      summary: 'REFRESH - Обновление пары токенов'
+      operationId: 9003fd96b1f478370ceb8a335afd4598
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          description: 'Валидация провалена'
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Токен не найден.' }
+                type: object
+        '403':
+          description: 'Refresh токен просрочен, либо недействителен'
+      security:
+        -
+          jwt: []
+  /api/auth/logout:
+    get:
+      tags:
+        - Auth
+      summary: 'LOGOUT - Удаление refresh токена из куков и белого списка в БД'
+      operationId: b489692601cd6bf77606001a5234e6b3
+      responses:
+        '200':
+          description: 'Токен удалён из белого списка БД. Куки очищены.'
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Токен успешно удалён из базы и куков.' }
+                type: object
+        '401':
+          description: 'Валидация провалена. Куки очищены.'
+        '403':
+          description: 'Refresh токен просрочен, либо недействителен. Куки очищены.'
+      security:
+        -
+          jwt: []
+  /api/orders:
+    get:
+      tags:
+        - Order
+      summary: 'INDEX - Список всех заказов'
+      operationId: e3af274a3e7bc6e15e8074fe2ea19987
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/OrderIndex' } }
+                  links: { $ref: '#/components/schemas/Links' }
+                  meta: { $ref: '#/components/schemas/Meta' }
+                type: object
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+      security:
+        -
+          jwt: []
+    post:
+      tags:
+        - Order
+      summary: 'STORE - Создание заказа'
+      operationId: 1394aaffa7eb92b4001f035d41712b81
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStoreRequestBody'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderStoreResponseCreated'
+        '422':
+          description: 'Валидация не пройдена'
+  '/api/orders/{order}/status':
+    patch:
+      tags:
+        - Order
+      summary: 'changeStatus - Изменение статуса заказа'
+      operationId: c4761a5aa8ca8d4bcde5292d93acb193
+      parameters:
+        -
+          name: order
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                status:
+                  type: integer
+                  example: 2
+              type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Статус заказа #1 успешно изменён' }
+                type: object
+        '400':
+          description: 'Неверный id статуса'
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Указан id несуществующего статуса.' }
+                type: object
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+      security:
+        -
+          jwt: []
+  '/api/orders/{order}':
+    get:
+      tags:
+        - Order
+      summary: 'SHOW - Отображение заказа'
+      operationId: ec14f7002af5f22a104871fce2aeac04
+      parameters:
+        -
+          name: order
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { $ref: '#/components/schemas/OrderShowData' }
+                type: object
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+      security:
+        -
+          jwt: []
+    delete:
+      tags:
+        - Order
+      summary: 'DESTROY - Удаление заказа'
+      operationId: d9b56e061233334a9b360967c432fcb3
+      parameters:
+        -
+          name: order
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Заказ удалён.' }
+                  order: { $ref: '#/components/schemas/OrderDestroyOrderDetails' }
+                type: object
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+      security:
+        -
+          jwt: []
+  '/api/users/{id}/orders':
+    get:
+      tags:
+        - Order
+      summary: 'showByUserId - Список заказов пользователя'
+      operationId: 53f9715690f3f506c493945e2da13281
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/OrderShowByUserIdItem' } }
+                  links: { $ref: '#/components/schemas/Links' }
+                  meta: { $ref: '#/components/schemas/Meta' }
+                type: object
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+      security:
+        -
+          jwt: []
+  /api/products:
+    get:
+      tags:
+        - Product
+      summary: 'INDEX - Массив товаров'
+      description: 'Список фильтров динамический, берётся из БД. Приведены только некоторые параметры.'
+      operationId: 4921844818b6d288a7bc2162f4054f04
+      parameters:
+        -
+          name: brand
+          in: query
+          description: "Пример: '1,2,3'"
+          schema:
+            type: string
+        -
+          name: minprice
+          in: query
+          description: 'Пример: 1000'
+          schema:
+            type: integer
+        -
+          name: maxprice
+          in: query
+          description: 'Пример: 10000'
+          schema:
+            type: integer
+        -
+          name: sort
+          in: query
+          description: 'Значения: lowprice/hiprice/older/newer'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/ProductIndexItem' } }
+                  meta: { $ref: '#/components/schemas/Meta' }
+                type: object
+    post:
+      tags:
+        - Product
+      summary: 'STORE - Создание товара'
+      operationId: d15a648814498263c1d325eeb4fcde8f
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequestBody'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Товар создан.' }
+                  product: { $ref: '#/components/schemas/ProductCreatedWithId' }
+                type: object
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+        '422':
+          description: 'Валидация не пройдена'
+      security:
+        -
+          jwt: []
+  '/api/products/{identifier}':
+    get:
+      tags:
+        - Product
+      summary: 'SHOW - Информация о товаре'
+      operationId: 7dd3268f57f3f07515ab618a6894fdf8
+      parameters:
+        -
+          name: identifier
+          in: path
+          description: 'Можно искать как по id, так и по slug'
+          required: true
+          schema:
+            anyOf:
+              -
+                type: integer
+              -
+                type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { $ref: '#/components/schemas/ProductDetails' }
+                type: object
+        '404':
+          description: 'Not Found'
+  /api/products/compare:
+    get:
+      tags:
+        - Product
+      summary: 'compare - Сравнение товаров'
+      operationId: 2c4231ccfcd013289dac4505ff8e88c0
+      parameters:
+        -
+          name: product
+          in: query
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/ProductDetails' } }
+                  attributes: { type: string, example: '{...}' }
+                type: object
+        '404':
+          description: 'Not Found'
+  /api/products/cart:
+    get:
+      tags:
+        - Product
+      summary: 'cart - Актуальные цены и ссылки на фото для списка товаров из корзины пользователя'
+      operationId: 34c7535ef6795582a4c2250d364a9614
+      parameters:
+        -
+          name: product
+          in: query
+          required: true
+          schema:
+            type: string
+            example: '1,2,3'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/ProductDetails' } }
+                type: object
+        '404':
+          description: 'Not Found'
+  '/api/products/{id}':
+    patch:
+      tags:
+        - Product
+      summary: 'UPDATE - Изменение товара'
+      description: 'Это Patch, а не Put, так что можно отправлять на обновление отдельные свойства.'
+      operationId: 520e94c55d54763169ebb728c976d09b
+      parameters:
+        -
+          name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequestBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Товар обновлён.' }
+                  product: { $ref: '#/components/schemas/ProductCreatedWithId' }
+                type: object
+        '400':
+          description: 'Отправлен запрос без параметров'
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+        '422':
+          description: 'Валидация не пройдена'
+      security:
+        -
+          jwt: []
+  '/api/products/{product}':
+    delete:
+      tags:
+        - Product
+      summary: 'DESTROY - Удаление товара'
+      operationId: fabb387c88c0353d5ce0db7de0a9afa3
+      parameters:
+        -
+          name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Товар удалён.' }
+                  product: { $ref: '#/components/schemas/ProductCreatedWithId' }
+                type: object
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+      security:
+        -
+          jwt: []
+  '/api/products/search/{query}':
+    get:
+      tags:
+        - Product
+      summary: 'search - Поиск товаров по ключевому слову'
+      operationId: 1020ea2e58506c617e78dc9a49a1d2ea
+      parameters:
+        -
+          name: query
+          in: path
+          required: true
+          schema:
+            type: string
+            example: sony
+        -
+          name: paginate
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: '5'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/ProductIndexItem' } }
+                  links: { $ref: '#/components/schemas/Links' }
+                  meta: { $ref: '#/components/schemas/Meta' }
+                type: object
+        '404':
+          description: 'Not Found'
+  /api/users:
+    get:
+      tags:
+        - User
+      summary: 'INDEX - Список пользователей'
+      operationId: 621f33ef02a0fde83125abc9fab0ca5a
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/UserIndexItem' } }
+                  links: { $ref: '#/components/schemas/Links' }
+                  meta: { $ref: '#/components/schemas/Meta' }
+                type: object
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+      security:
+        -
+          jwt: []
+    post:
+      tags:
+        - User
+      summary: 'STORE - Регистрация пользователя и выдача пары токенов'
+      operationId: 6f9de9a14157f3808e6922b089035529
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequestBody'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  access: { type: string, example: abcdefg... }
+                  access_exp: { type: integer, example: 1535153 }
+                  user: { $ref: '#/components/schemas/UserIndexItem' }
+                type: object
+        '422':
+          description: 'Валидация не пройдена'
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Поле email обязательно. (and 1 more error)' }
+                  errors: { properties: { email: { type: string, example: "['Поле email обязательно.']" }, password: { type: string, example: "['Поле пароль обязательно.']" } }, type: object }
+                type: object
+  '/api/users/{user}':
+    get:
+      tags:
+        - User
+      summary: 'SHOW - Информация о пользователе'
+      operationId: ed09ae89e636d41bd5be0c9da8c95c6d
+      parameters:
+        -
+          name: user
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  data: { $ref: '#/components/schemas/UserIndexItem' }
+                type: object
+        '404':
+          description: 'Нет прав = не знаешь о существовании страницы'
+      security:
+        -
+          jwt: []
+  '/api/users/{id}/password':
+    patch:
+      tags:
+        - User
+      summary: 'changePassword - Изменение пароля'
+      operationId: 4901a0c094631abf72f4b829ca48802f
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserChangePasswordRequestBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Пароль изменён.' }
+                  user: { $ref: '#/components/schemas/UserIndexItem' }
+                type: object
+        '404':
+          description: 'Пользователь не найден, либо нет прав.'
+        '422':
+          description: 'Валидация не пройдена'
+      security:
+        -
+          jwt: []
+  '/api/users/{id}/address':
+    patch:
+      tags:
+        - User
+      summary: 'changeAddress - Изменение адреса'
+      operationId: 80fb5ce73320598c9bf5232805ab8f95
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                address:
+                  type: string
+                  example: 'г. Череповец, ул. Кирпичная, д. 3, кв. 1'
+              type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Адрес изменён.' }
+                  user: { $ref: '#/components/schemas/UserIndexItem' }
+                type: object
+        '404':
+          description: 'Пользователь не найден, либо нет прав.'
+        '422':
+          description: 'Валидация не пройдена'
+      security:
+        -
+          jwt: []
+  '/api/users/{id}/profile':
+    patch:
+      tags:
+        - User
+      summary: 'changeProfile - Изменение имени и телефона'
+      operationId: 412426a300d05ad0a07b93e5af7bff68
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                name:
+                  type: string
+                  example: 'Семён семёныч'
+                phone:
+                  type: string
+                  example: '+70123456789'
+              type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Имя и телефон изменены.' }
+                  user: { $ref: '#/components/schemas/UserIndexItem' }
+                type: object
+        '404':
+          description: 'Пользователь не найден, либо нет прав.'
+        '422':
+          description: 'Валидация не пройдена'
+      security:
+        -
+          jwt: []
+  '/api/users/{id}/email':
+    patch:
+      tags:
+        - User
+      summary: 'changeEmail - Изменение email'
+      description: 'password - действующий пароль для подтверждения операции'
+      operationId: 0321a831b80d4c204174c77901b6150f
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                email:
+                  type: string
+                  example: example@mail.org
+                password:
+                  type: string
+                  example: qwerty
+              type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Email изменён.' }
+                  user: { $ref: '#/components/schemas/UserIndexItem' }
+                type: object
+        '404':
+          description: 'Пользователь не найден, либо нет прав.'
+        '422':
+          description: 'Валидация не пройдена, либо неверный пароль.'
+      security:
+        -
+          jwt: []
+  '/api/users/{id}':
+    delete:
+      tags:
+        - User
+      summary: 'DESTROY - Удаление пользователя'
+      operationId: 2045e973f415750c409218510ea298f9
+      parameters:
+        -
+          name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  message: { type: string, example: 'Пользователь удалён.' }
+                  user: { $ref: '#/components/schemas/UserIndexItem' }
+                type: object
+        '404':
+          description: 'Пользователь не найден, либо нет прав.'
+      security:
+        -
+          jwt: []
+components:
+  schemas:
+    AttributeIndex:
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Марка
+        slug:
+          type: string
+          example: brand
+        vals:
+          type: array
+          items:
+            properties:
+              id:
+                type: integer
+                example: 1
+              name:
+                type: string
+                example: Marshall
+            type: object
+      type: object
+    AuthLoginRequestBody:
+      properties:
+        email:
+          type: string
+          example: a@a.a
+        password:
+          type: string
+          example: '123'
+      type: object
+    AuthToken:
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        access:
+          type: string
+          example: abcdefg....
+        access_exp:
+          type: integer
+          example: 1712756994
+      type: object
+    AuthLoginResponseNotValid:
+      properties:
+        errors:
+          properties:
+            email:
+              type: string
+              example:
+                - error1
+                - error2
+            password:
+              type: string
+              example:
+                - error1
+                - error2
+          type: object
+      type: object
+    AuthJWTServiceCheck:
+      properties:
+        decoded:
+          properties:
+            iss:
+              type: string
+              example: 'http://example.com'
+            sub:
+              type: integer
+              example: 1
+            per:
+              type: string
+              example: '[1, 2, 3]'
+            exp:
+              type: integer
+              example: 1712757994
+            typ:
+              type: string
+              example: AT
+          type: object
+      type: object
+    Links:
+      type: string
+      example: '{...}'
+    Meta:
+      properties:
+        current_page:
+          type: integer
+          example: 1
+        last_page:
+          type: integer
+          example: 5
+        total:
+          type: integer
+          example: 100
+      type: object
+    OrderIndex:
+      properties:
+        id:
+          type: integer
+          example: 1
+        total:
+          type: integer
+          example: 46200
+        name:
+          type: string
+          example: 'Семён Семёныч'
+        user_id:
+          type: integer
+          example: 1
+        phone:
+          type: string
+          example: '+79999999999'
+        email:
+          type: string
+          example: example@mail.org
+        address:
+          type: string
+          example: 'ул. Кукурузная, д. 35'
+        comment:
+          type: string
+          example: Побыстрее!
+        status:
+          type: string
+          example: 'Создан, ожидает подтверждения.'
+      type: object
+    OrderStoreRequestBody:
+      properties:
+        name:
+          type: string
+          example: 'Василий Иваныч'
+        phone:
+          type: string
+          example: '+70123456789'
+        email:
+          type: string
+          example: ivanich@mail.org
+        address:
+          type: string
+          example: 'ул. Ленина, д. 1'
+        comment:
+          type: string
+          example: 'Хочу скидку побольше!'
+        products:
+          type: array
+          items:
+            properties:
+              product_id:
+                type: integer
+                example: 1
+              count:
+                type: integer
+                example: 3
+            type: object
+      type: object
+    OrderStoreResponseCreated:
+      properties:
+        message:
+          type: string
+          example: 'Заказ успешно создан.'
+        order:
+          type: string
+          example: '{ id, ... }'
+        errors:
+          type: string
+          example: '{...}'
+      type: object
+    OrderShowData:
+      properties:
+        id:
+          type: integer
+          example: 1
+        total:
+          type: integer
+          example: 46200
+        name:
+          type: string
+          example: 'Василий Иваныч'
+        phone:
+          type: string
+          example: '+70123456789'
+        email:
+          type: string
+          example: example@mail.org
+        address:
+          type: string
+          example: 'ул. Ленина, д. 1'
+        comment:
+          type: string
+          example: Поживее!
+        status:
+          type: string
+          example: 'Подтверждён, ожидает оплаты.'
+        created_at:
+          type: string
+          example: '2024-04-09T20:08:18.000000Z'
+        updated_at:
+          type: string
+          example: '2024-04-09T16:08:40.000000Z'
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderShowProductItem'
+      type: object
+    OrderShowProductItem:
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 'JBL pariatur'
+        slug:
+          type: string
+          example: jbl-pariatur
+        image:
+          type: string
+          example: 'http://localhost:8000/storage/photos/products/overhead/wired/0.jpg'
+        count:
+          type: integer
+          example: 2
+        price:
+          type: integer
+          example: 23300
+      type: object
+    OrderShowByUserIdItem:
+      properties:
+        id:
+          type: integer
+          example: 1
+        total:
+          type: integer
+          example: 46200
+        address:
+          type: string
+          example: 'ул. Ленина, д. 1'
+        comment:
+          type: string
+          example: Поживее!
+        status:
+          type: string
+          example: 'Подтверждён, ожидает оплаты.'
+        created_at:
+          type: string
+          example: '2024-04-09T20:08:18.000000Z'
+        updated_at:
+          type: string
+          example: '2024-04-09T16:08:40.000000Z'
+      type: object
+    OrderDestroyOrderDetails:
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        status_id:
+          type: integer
+          example: 1
+        total:
+          type: integer
+          example: 46200
+        name:
+          type: string
+          example: 'Василий Иваныч'
+        phone:
+          type: string
+          example: '+70123456789'
+        email:
+          type: string
+          example: ivanich@mail.org
+        address:
+          type: string
+          example: 'ул. Ленина, д. 1'
+        comment:
+          type: string
+          example: Поживее!
+        created_at:
+          type: string
+          example: '2024-04-09T20:08:18.000000Z'
+        updated_at:
+          type: string
+          example: '2024-04-09T16:08:40.000000Z'
+      type: object
+    ProductIndexItem:
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 'Focal molestiae'
+        slug:
+          type: string
+          example: focal-molestiae
+        price:
+          type: integer
+          example: 22900
+        image:
+          type: string
+          example: /overhead/wired/0.jpg
+        description:
+          type: string
+          example: 'Expedita eos earum eaque culpa iure quae.'
+      type: object
+    ProductDetails:
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 'Focal molestiae'
+        slug:
+          type: string
+          example: focal-molestiae
+        price:
+          type: integer
+          example: 22900
+        image:
+          type: string
+          example: /overhead/wired/0.jpg
+        description:
+          type: string
+          example: 'Expedita eos earum eaque culpa iure quae.'
+        attributes:
+          type: string
+          example: '[{...}, {...}, ...]'
+        photos:
+          type: string
+          example: "['url', 'url', ...]"
+      type: object
+    ProductCartDetails:
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 'Focal molestiae'
+        slug:
+          type: string
+          example: focal-molestiae
+        price:
+          type: integer
+          example: 22900
+        image:
+          type: string
+          example: /overhead/wired/0.jpg
+      type: object
+    ProductRequestBody:
+      properties:
+        name:
+          type: string
+          example: 'Тестовый товар'
+        slug:
+          type: string
+          example: testoviy-tovar
+        price:
+          type: integer
+          example: 100500
+        description:
+          type: string
+          example: 'Тестовое описание'
+        min_frequency:
+          type: integer
+          example: 50
+        max_frequency:
+          type: integer
+          example: 19
+        sensitivity:
+          type: integer
+          example: 30
+        image:
+          type: string
+          example: test.jpg
+      type: object
+    ProductCreatedWithId:
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 'Тестовый товар'
+        slug:
+          type: string
+          example: testoviy-tovar
+        price:
+          type: integer
+          example: 100500
+        description:
+          type: string
+          example: 'Тестовое описание'
+        min_frequency:
+          type: integer
+          example: 50
+        max_frequency:
+          type: integer
+          example: 19
+        sensitivity:
+          type: integer
+          example: 30
+        image:
+          type: string
+          example: test.jpg
+      type: object
+    UserIndexItem:
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 'Семён Семёныч'
+        email:
+          type: string
+          example: example@mail.org
+        address:
+          type: string
+          example: 'ул. Кукурузная, д. 35'
+        phone:
+          type: string
+          example: '+79999999999'
+        orders:
+          type: integer
+          example: 3
+        orders_total:
+          type: integer
+          example: 161100
+        permissions:
+          type: string
+          example: '[...]'
+      type: object
+    UserRequestBody:
+      properties:
+        name:
+          type: string
+          example: 'Василий Ложкин'
+        email:
+          type: string
+          example: vasya@mail.org
+        password:
+          type: string
+          example: qwerty
+        password_confirmation:
+          type: string
+          example: qwerty
+      type: object
+    UserChangePasswordRequestBody:
+      properties:
+        old_password:
+          type: string
+          example: qwerty
+        new_password:
+          type: string
+          example: '12345'
+        new_password_confirmation:
+          type: string
+          example: '12345'
+      type: object
+  securitySchemes:
+    jwt:
+      type: http
+      scheme: bearer
+tags:
+  -
+    name: Attribute
+    description: Attribute
+  -
+    name: Auth
+    description: Auth
+  -
+    name: Order
+    description: Order
+  -
+    name: Product
+    description: Product
+  -
+    name: User
+    description: User

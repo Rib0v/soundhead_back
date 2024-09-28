@@ -5,35 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Attribute;
 use App\Services\AttributeService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 class AttributeController extends Controller
 {
     /**
-     * @OA\Get(
-     *   tags={"Attribute"},
-     *   path="/api/attributes",
-     *   summary="INDEX - Список всех доступных характеристик товаров",
-     *   @OA\Response(response=200, description="OK",
-     *     @OA\JsonContent(
-     *       type="array",
-     *         @OA\Items(
-     *           @OA\Property(property="id", type="integer", example=1),
-     *           @OA\Property(property="name", type="string", example="Марка"),
-     *           @OA\Property(property="slug", type="string", example="brand"),
-     *           @OA\Property(property="vals", type="array", 
-     *             @OA\Items(
-     *               @OA\Property(property="id", type="integer", example=1),
-     *               @OA\Property(property="name", type="string", example="Marshall"),
-     *             )
-     *           ),
-     *         )
-     *       ),
-     *     )
-     *   )
-     * )
+     * Список всех доступных характеристик товаров
+     * 
+     * @param AttributeService $service
+     * 
+     * @return Response
      */
-    public function index(AttributeService $service)
+    public function index(AttributeService $service): Response
     {
         $filters = $service->getFilters();
 
