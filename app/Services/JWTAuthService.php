@@ -3,12 +3,12 @@
 namespace App\Services;
 
 use App\Models\Token;
+use DomainException;
+use Firebase\JWT\BeforeValidException;
+use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Firebase\JWT\SignatureInvalidException;
-use Firebase\JWT\BeforeValidException;
-use Firebase\JWT\ExpiredException;
-use DomainException;
 use InvalidArgumentException;
 use stdClass;
 use UnexpectedValueException;
@@ -99,7 +99,7 @@ class JWTAuthService
         try {
             $decoded = JWT::decode($token, new Key($this->key, 'HS256'));
             $permissions = explode(',', $decoded->per);
-            $decoded->per = array_map(fn ($permission) => (int)$permission, $permissions);
+            $decoded->per = array_map(fn($permission) => (int)$permission, $permissions);
         } catch (InvalidArgumentException $e) {
             throw new \Exception("Ключ отсутствует, или имеет неверный формат.", 401);
         } catch (DomainException $e) {
