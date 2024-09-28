@@ -12,120 +12,44 @@ Backend-часть интернет-магазина на `Laravel`. Связь 
 
 [[Frontend здесь](https://github.com/Rib0v/soundhead_front)]
 
-# Как развернуть локально
-
-*Примечание: для запуска приложения требуется* `redis` *и расширение* `phpredis`.
-
-Устанавливаем зависимости:
-
-```bash
-composer install
-```
-
-Копируем файл конфига:
-
-```bash
-cp .env.example .env
-```
-
-Генерируем ключ приложения:
-
-```bash
-php artisan key:generate
-```
-
-Генерируем ключ и конфиг для jwt-авторизации:
-
-```bash
-php artisan jwt:conf
-```
-
-Создаём в `/public` симлинк на `storage/app/public/` 
-
-```bash
-php artisan storage:link
-```
-
-Накатываем миграции и наполняем контентом:
-
-```bash
-php artisan migrate --seed
-```
-
-Запускаем сервер:
-
-```bash
-php artisan serve
-```
-
 # Как развернуть в Docker
 
-### Различия в ОС
+### Инициализация
 
-Все команды написаны для `Linux` системы. В `Windows` и `Mac OS` необходимо заменить `docker compose` на `docker-compose`, а `sudo` писать не обязательно. В `Windows` все команды выполнять в среде `WSL`.
-
-### Установка
-
-Копируем файл конфига:
+При первом запуске выполнить в корневой папке проекта:
 
 ```bash
-cp .env.doc.example .env
+./d init
 ```
 
-Записываем id хоста в переменную, чтобы не было проблем с правами доступа к файлам:
-
-```bash
-echo -e "\nDOCKER_USER=$(id -u):$(id -g)" >> .env
-```
-
-Создаём сеть:
-
-```bash
-sudo docker network create soundhead
-```
-
-Собираем образы:
-
-```bash
-sudo docker compose build
-```
-
-Устанавливаем зависимости, на сообщение `Class "Redis" not found` не обращаем внимание 
-
-```bash
-sudo docker compose run --rm composer install
-```
-
-Генерируем ключ приложения:
-
-```bash
-sudo docker compose run --rm artisan key:generate
-```
-
-Генерируем ключ и конфиг для jwt-авторизации:
-
-```bash
-sudo docker compose run --rm artisan jwt:conf
-```
-
-Накатываем миграции и наполняем контентом:
-
-```bash
-sudo docker compose run --rm artisan migrate --seed
-```
+Эта команда установит зависимости, накатит миграции и запустит приложение в режиме `только-backend` на 80 порту [http://localhost/](http://localhost/)
 
 ### Запуск бэка отдельно
 
-По умолчанию ресурс будет доступен на 80 порту [http://localhost/](http://localhost/) 
-
 ```bash
-sudo docker compose up lara
+./d back
 ```
 
 ### Запуск совместно с фронтом
 
-Сначала нужно запустить [frontend-часть](https://github.com/Rib0v/soundhead_front). После этого запускаем `nginx`. Сервер будет доступен на 80 порту [http://localhost/](http://localhost/) 
+Сначала нужно запустить [frontend-часть](https://github.com/Rib0v/soundhead_front). После этого выполнить:
 
 ```bash
-sudo docker compose up nginx
+./d up
+```
+
+Приложение будет доступно на 80 порту [http://localhost/](http://localhost/)
+
+### Завершение
+
+```bash
+./d down
+```
+
+### Список команд
+
+Показать полный список доступных команд:
+
+```bash
+./d
 ```
