@@ -33,13 +33,12 @@ class AttributeService
      * значения атрибутов (values)
      * по категориям-атрибутам (attributes)
      * 
-     * @param array $filters
+     * @param \Illuminate\Database\Eloquent\Collection $filters
      * 
      * @return array
      */
     public function formatFilters(Collection $filters): array
     {
-
         $formattedFilters = [];
 
         foreach ($filters as $value) {

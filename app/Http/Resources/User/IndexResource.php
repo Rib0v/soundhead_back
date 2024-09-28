@@ -5,7 +5,7 @@ namespace App\Http\Resources\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class IndexRosource extends JsonResource
+class IndexResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -30,7 +30,7 @@ class IndexRosource extends JsonResource
 
     private function getOrdersTotal(): int
     {
-        return (int)array_reduce($this->orders->toArray(), fn ($accum, $order) => $accum += $order['total']);
+        return (int)array_reduce($this->orders->toArray(), fn($accum, $order) => $accum += $order['total']);
     }
 
     private function getPermissions(): array
