@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
-use App\Services\PermissionService;
+use App\Services\Auth\CustomGate;
+use App\Services\Auth\JWTTokenGuard;
+use Illuminate\Contracts\Auth\Access\Gate as GateContract;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,7 +17,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(GateContract::class, function ($app) {
+            return new CustomGate($app, fn() => $app['auth']->user());
+        });
     }
 
     /**
@@ -22,19 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::define('content-manager', function (null $user, ?string $token): bool {
-
-            return PermissionService::checkEditContentPermission($token);
-        });
-
-        Gate::define('order-manager', function (null $user, ?string $token): bool {
-
-            return PermissionService::checkEditOrdersPermission($token);
-        });
-
-        Gate::define('admin', function (null $user, ?string $token): bool {
-
-            return PermissionService::checkEditUsersPermission($token);
+        Auth::extend('jwt', function (Application $app, string $name, array $config) {
+            return new JWTTokenGuard(Auth::createUserProvider($config['provider']), $app['request']);
         });
     }
 }
