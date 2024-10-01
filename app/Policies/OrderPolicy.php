@@ -3,42 +3,34 @@
 namespace App\Policies;
 
 use App\Models\Order;
-use App\Services\JWTAuthService;
-use App\Services\PermissionService;
+use App\Models\User;
+use App\Services\Auth\JWTAuthService;
 
 class OrderPolicy
 {
-    public function __construct(private JWTAuthService $jwt)
+    public function __construct(private JWTAuthService $jwt) {}
+
+    public function show(User $user, Order $order)
     {
+        if ($user->hasPermission('edit_orders')) return true;
+
+        return $this->isOwnOrder($user, $order);
     }
 
-    public function before(null $user, string $ability, Order $order, ?string $token): bool|null
+    public function showByUserId(User $user): bool
     {
-        $hasPermission = PermissionService::checkEditOrdersPermission($token);
+        if ($user->hasPermission('edit_orders')) return true;
 
-        if ($hasPermission) return true;
-
-        return null;
+        return $this->isSameUser($user);
     }
 
-    public function show(null $user, Order $order, ?string $token): bool
+    protected function isOwnOrder(User $user, Order $order): bool
     {
-        try {
-            $checked = $this->jwt->checkAccess($token);
-            return $order->user_id == $checked->sub;
-        } catch (\Exception $e) {
-            return false;
-        }
+        return $user->id === $order->user_id;
     }
 
-
-    public function showByUserId(null $user, Order $order, ?string $token, int $userId): bool
+    protected function isSameUser(User $user): bool
     {
-        try {
-            $checked = $this->jwt->checkAccess($token);
-            return $userId == $checked->sub;
-        } catch (\Exception $e) {
-            return false;
-        }
+        return $user->id === (int)request()->route('user');
     }
 }

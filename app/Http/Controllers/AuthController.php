@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\LoginRequest;
-use App\Services\AuthService;
-use App\Services\JWTAuthService;
+use App\Services\Auth\JWTAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -20,27 +20,28 @@ class AuthController extends Controller
      * 
      * @return Response
      */
-    public function login(LoginRequest $request, JWTAuthService $jwt, AuthService $service): Response
+    public function login(LoginRequest $request, JWTAuthService $jwt): Response
     {
         $validated = $request->validated();
 
-        $user = $service->getUser($validated['email']);
-        $checkedPassword = $service->checkPassword($user, $validated['password']);
-
-        if (!$checkedPassword) {
+        if (!Auth::validate(['email' => $validated['email'], 'password' => $validated['password']])) {
             return response(['errors' => ['email' => ['Неверный логин или пароль.']]], 401);
         }
 
-        $userPermissions = $service->getPermissions($user);
-
-        $tokens = $jwt->create($user->id, $userPermissions);
+        $user = Auth::user();
+        $tokens = $jwt->create($user->id, $user->permissionIds);
 
         return response([
             'user_id' => $user->id,
             'access' => $tokens['access'],
             'access_exp' => $tokens['access_exp'],
         ])
-            ->cookie('refresh', $tokens['refresh'], $tokens['refresh_minutes'], '/', $service->getAppUrl(), false, true);
+            ->cookie('refresh', $tokens['refresh'], $tokens['refresh_minutes'], '/', getAppUrl(), false, true);
+    }
+
+    public function test()
+    {
+        return response(['message' => 'test']);
     }
 
     /**
@@ -90,7 +91,7 @@ class AuthController extends Controller
      * 
      * @return Response
      */
-    public function refresh(Request $request, JWTAuthService $jwt, AuthService $service): Response
+    public function refresh(Request $request, JWTAuthService $jwt): Response
     {
         try {
             $refreshed = $jwt->refresh($request->cookie('refresh'));
@@ -106,7 +107,7 @@ class AuthController extends Controller
                 $refreshed['tokens']['refresh'],
                 $refreshed['tokens']['refresh_minutes'],
                 '/',
-                $service->getAppUrl(),
+                getAppUrl(),
                 false,
                 true
             );

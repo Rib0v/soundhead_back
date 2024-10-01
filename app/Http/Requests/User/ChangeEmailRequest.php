@@ -14,6 +14,15 @@ class ChangeEmailRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        /**
+         * Получаем полную модель юзера из БД,
+         * чтобы сработала проверка current_password
+         */
+        $this->user()?->get();
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -22,7 +31,7 @@ class ChangeEmailRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => 'required|min:3',
+            'password' => 'required|min:3|current_password',
             'email' => 'required|string|email',
         ];
     }
