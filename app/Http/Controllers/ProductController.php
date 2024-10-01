@@ -42,24 +42,21 @@ class ProductController extends Controller
     }
 
     /**
-     * Информация о товаре
-     * 
+     * Информация о товаре.
      * Если передано число - ищет по id,
      * если строка - по slug
      * 
      * @param int|string $identifier
      * @param ProductService $service
-     * 
      * @return Response
      */
     public function show(int|string $identifier, ProductService $service): Response
     {
-        try {
-            $id = +$identifier;
-            return response(['data' => $service->getById($id)]);
-        } catch (\Throwable $th) {
-            return response(['data' => $service->getBySlug($identifier)]);
-        }
+        $product = is_numeric($identifier)
+            ? $service->getById($identifier)
+            : $service->getBySlug($identifier);
+
+        return response(['data' => $product]);
     }
 
     /**
@@ -67,7 +64,6 @@ class ProductController extends Controller
      * 
      * @param Request $request
      * @param ProductService $service
-     * 
      * @return Response
      */
     public function compare(Request $request, ProductService $service): Response
@@ -77,8 +73,8 @@ class ProductController extends Controller
         }
 
         $products = $service->getProductsToCompare($request->query('product'));
-
         $resp = $service->getFormattedData($products, $request);
+
         return response($resp);
     }
 
@@ -88,7 +84,6 @@ class ProductController extends Controller
      * 
      * @param Request $request
      * @param ProductService $service
-     * 
      * @return Response
      */
     public function cart(Request $request, ProductService $service): Response
@@ -99,7 +94,7 @@ class ProductController extends Controller
 
         $products = $service->getProductsToCart($request->query('product'));
 
-        return CartResource::collection($products);
+        return response(CartResource::collection($products));
     }
 
     /**
@@ -107,15 +102,10 @@ class ProductController extends Controller
      * 
      * @param UpdateRequest $request
      * @param ProductService $service
-     * 
      * @return Response
      */
     public function store(UpdateRequest $request, ProductService $service): Response
     {
-        if (Gate::denies('content-manager', [$request->bearerToken()])) {
-            abort(404, 'Not found');
-        }
-
         $validated = $request->validated();
         $createdProduct = Product::create($validated);
 
@@ -130,20 +120,11 @@ class ProductController extends Controller
      * @param UpdateRequest $request
      * @param Product $product
      * @param ProductService $service
-     * 
      * @return Response
      */
     public function update(UpdateRequest $request, Product $product, ProductService $service): Response
     {
-        if (Gate::denies('content-manager', [$request->bearerToken()])) {
-            abort(404, 'Not found');
-        }
-
         $validated = $request->validated();
-
-        if (empty($validated)) {
-            return response(['message' => 'Не предоставлено данных для обновления'], 400);
-        }
 
         Product::where('id', $product->id)->update($validated);
         $product->refresh();
@@ -157,16 +138,10 @@ class ProductController extends Controller
      * Удаление товара
      * 
      * @param Product $product
-     * @param Request $request
-     * 
      * @return Response
      */
-    public function destroy(Product $product, Request $request): Response
+    public function destroy(Product $product): Response
     {
-        if (Gate::denies('content-manager', [$request->bearerToken()])) {
-            abort(404, 'Not found');
-        }
-
         $product->delete();
 
         return response(['message' => 'Товар удалён.', 'product' => $product]);
@@ -177,18 +152,30 @@ class ProductController extends Controller
      * 
      * @param string $query
      * @param Request $request
-     * 
      * @return Response
      */
     public function search(string $query, Request $request): Response
     {
         $paginate = $request->query('paginate', '20');
 
-        // Для сохранения совместимости с SQLITE
-        $caseInsensitiveOperator = config('database.default') === 'pgsql' ? 'ILIKE' : 'LIKE';
+        $like = $this->getCaseInsensitiveLikeOperator();
 
-        $products = Product::where('name', $caseInsensitiveOperator, "%$query%")->paginate($paginate);
+        $products = Product::where('name', $like, "%$query%")->paginate($paginate);
 
         return response(IndexResource::collection($products));
+    }
+
+
+    /**
+     * Возвращает подходящий регистронезависимый
+     * оператор like в зависимости от выбранной БД.
+     * Сделано для возможности быстро переключаться
+     * между PostgreSQL и SQLite
+     * 
+     * @return string
+     */
+    private function getCaseInsensitiveLikeOperator(): string
+    {
+        return (config('database.default') === 'pgsql') ? 'ILIKE' : 'LIKE';
     }
 }

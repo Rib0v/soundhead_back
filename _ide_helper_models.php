@@ -294,6 +294,7 @@ namespace App\Models{
  * @property-read int|null $notifications_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> $orders
  * @property-read int|null $orders_count
+ * @property-read mixed $permission_ids
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PermissionUser> $permissionUsers
  * @property-read int|null $permission_users_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Permission> $permissions

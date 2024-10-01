@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Auth;
 
+use App\Exceptions\JWTValidationException;
 use App\Models\Token;
 use DomainException;
 use Firebase\JWT\BeforeValidException;
@@ -35,7 +36,6 @@ class JWTAuthService
      * 
      * @param int $userId
      * @param array $permissions
-     * 
      * @return array ['access', 'refresh', 'access_exp', 'refresh_minutes']
      */
     public function create(int $userId, array $permissions = []): array
@@ -83,15 +83,13 @@ class JWTAuthService
      * Проверка токена
      * 
      * @param string|null $token
-     * 
      * @return stdClass decoded payload
-     * 
-     * @throws \Exception 403 = просрочен, 401 = валидация провалена
+     * @throws JWTValidationException 403 = просрочен, 401 = валидация провалена
      */
     public function check(?string $token): stdClass
     {
         if (!$token) {
-            throw new \Exception("Токен не найден.", 401);
+            throw new JWTValidationException("Токен не найден.", 401);
         }
 
         JWT::$leeway = $this->leeway;
@@ -101,19 +99,17 @@ class JWTAuthService
             $permissions = explode(',', $decoded->per);
             $decoded->per = array_map(fn($permission) => (int)$permission, $permissions);
         } catch (InvalidArgumentException $e) {
-            throw new \Exception("Ключ отсутствует, или имеет неверный формат.", 401);
+            throw new JWTValidationException("Ключ отсутствует, или имеет неверный формат.", 401);
         } catch (DomainException $e) {
-            throw new \Exception("Алгоритм не поддерживается, или ключ недействителен.", 401);
+            throw new JWTValidationException("Алгоритм не поддерживается, или ключ недействителен.", 401);
         } catch (SignatureInvalidException $e) {
-            throw new \Exception("Проверка подписи не удалась", 401);
+            throw new JWTValidationException("Проверка подписи не удалась", 401);
         } catch (BeforeValidException $e) {
-            throw new \Exception("Токен ещё не начал действовать.", 401);
+            throw new JWTValidationException("Токен ещё не начал действовать.", 401);
         } catch (ExpiredException $e) {
-            throw new \Exception("Токен просрочен.", 403);
+            throw new JWTValidationException("Токен просрочен.", 403);
         } catch (UnexpectedValueException $e) {
-            throw new \Exception("Неверный формат или несоответствующий алгоритм.", 401);
-        } catch (\Throwable $th) {
-            throw new \Exception("Неизвестная ошибка.", 401);
+            throw new JWTValidationException("Неверный формат или несоответствующий алгоритм.", 401);
         }
 
         return $decoded;
@@ -123,17 +119,15 @@ class JWTAuthService
      * Проверка access токена
      * 
      * @param string|null $token
-     * 
-     * @return stdClass    decoded jwt-payload
-     * 
-     * @throws \Exception    401 = не access токен
+     * @return stdClass  decoded jwt-payload
+     * @throws JWTValidationException  401 = не access токен
      */
     public function checkAccess(?string $token): stdClass
     {
         $checked = $this->check($token);
 
         if ($checked->typ !== 'AT') {
-            throw new \Exception("Токен не является типом access.", 401);
+            throw new JWTValidationException("Токен не является типом access.", 401);
         }
 
         return $checked;
@@ -143,21 +137,19 @@ class JWTAuthService
      * Проверка refresh токена
      * 
      * @param string|null $token
-     * 
-     * @return stdClass    decoded jwt-payload
-     * 
-     * @throws \Exception    403 = не refresh, либо не найден в белом списке БД
+     * @return stdClass  decoded jwt-payload
+     * @throws JWTValidationException  403 = не refresh, либо не найден в белом списке БД
      */
     public function checkRefresh(?string $token): stdClass
     {
         $checked = $this->check($token);
 
         if ($checked->typ !== 'RT') {
-            throw new \Exception("Токен не является типом refresh.", 401);
+            throw new JWTValidationException("Токен не является типом refresh.", 401);
         }
 
         if (Token::where('token', $token)->doesntExist()) {
-            throw new \Exception("Refresh-токен недействителен.", 403);
+            throw new JWTValidationException("Refresh-токен недействителен.", 403);
         }
 
         return $checked;
@@ -167,10 +159,8 @@ class JWTAuthService
      * Обновление пары токенов
      * 
      * @param string|null $token
-     * 
-     * @return array ['decoded', 'tokens']
-     * 
-     * @throws \Exception    в вызываемых методах
+     * @return array  ['decoded', 'tokens']
+     * @throws JWTValidationException  в вызываемых методах
      */
     public function refresh(?string $token): array
     {
@@ -183,23 +173,21 @@ class JWTAuthService
      * Удаление refresh токена из БД
      * 
      * @param string|null $token
-     * 
      * @return void
-     * 
-     * @throws \Exception    403 = не refresh, либо не найден в белом списке БД
+     * @throws JWTValidationException  403 = не refresh, либо не найден в белом списке БД
      */
     public function destroy(?string $token): void
     {
         $checked = $this->check($token);
 
         if ($checked->typ !== 'RT') {
-            throw new \Exception("Токен не является типом refresh.", 403);
+            throw new JWTValidationException("Токен не является типом refresh.", 403);
         }
 
         $deleted = Token::where('token', $token)->delete();
 
         if (!$deleted) {
-            throw new \Exception("Токен не найден в базе.", 403);
+            throw new JWTValidationException("Токен не найден в базе.", 403);
         }
     }
 }

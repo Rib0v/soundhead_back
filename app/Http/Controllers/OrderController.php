@@ -25,10 +25,6 @@ class OrderController extends Controller
      */
     public function index(Request $request): Response
     {
-        if (Gate::denies('order-manager', [$request->bearerToken()])) {
-            abort(404, 'Not found');
-        }
-
         return response(IndexResource::collection(Order::query()->paginate(20)));
     }
 
@@ -67,10 +63,6 @@ class OrderController extends Controller
      */
     public function changeStatus(Order $order, StatusRequest $request, OrderService $service): Response
     {
-        if (Gate::denies('order-manager', [$request->bearerToken()])) {
-            abort(404, 'Not found');
-        }
-
         $statusId = $request->validated('status');
         $checkedStatus = $service->checkStatusId($statusId);
 
@@ -92,29 +84,20 @@ class OrderController extends Controller
      */
     public function show(Order $order, Request $request): Response
     {
-        if (Gate::denies('show', [$order, $request->bearerToken()])) {
-            abort(404, 'Not found');
-        }
-
         return response(new ShowResource($order));
     }
 
     /**
      * Список заказов пользователя
      * 
-     * @param int $id
-     * @param Request $request
-     * @param Order $order
+     * @param int $user
      * 
      * @return Response
      */
-    public function showByUserId(int $id, Request $request, Order $order): Response
+    public function showByUserId(int $user): Response
     {
-        if (Gate::denies('showByUserId', [$order, $request->bearerToken(), $id])) {
-            abort(404, 'Not found');
-        }
+        $orders = Order::where('user_id', $user)->paginate(20);
 
-        $orders = Order::where('user_id', $id)->paginate(20);
         return response(UserResource::collection($orders));
     }
 
@@ -128,10 +111,6 @@ class OrderController extends Controller
      */
     public function destroy(Order $order, Request $request): Response
     {
-        if (Gate::denies('admin', [$request->bearerToken()])) {
-            abort(404, 'Not found');
-        }
-
         $order->delete();
 
         return response(['message' => 'Заказ удалён.', 'order' => $order]);

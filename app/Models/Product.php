@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Utilities\Utils;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,7 +46,7 @@ class Product extends Model
     {
         $whitelist = Redis::get('product_attributes');
 
-        $allowedOptions = Utils::strParamsToArr($request->only($whitelist));
+        $allowedOptions = strParamsToArr($request->only($whitelist));
 
         foreach ($allowedOptions as $value) {
             $query->whereHas('values', function ($query) use ($value) {
