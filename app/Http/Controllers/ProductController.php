@@ -23,7 +23,7 @@ class ProductController extends Controller
      */
     public function index(Request $request, ProductService $service): Response
     {
-        if ($service->isRequestWithoutFilters($request)) {
+        if (config('cache.enabled') && $service->isRequestWithoutFilters($request)) {
             return response($service->getCachedPage($request));
         }
 

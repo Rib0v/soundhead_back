@@ -18,7 +18,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected array $permissionsFromToken = [];
+    protected ?array $permissionsFromToken = null;
 
     /**
      * The attributes that are mass assignable.
@@ -120,7 +120,9 @@ class User extends Authenticatable
     {
         $permissionId = PermissionService::getPermissionId($permission);
 
-        return in_array($permissionId, $this->permissionsFromToken);
+        $permissions = $this->permissionsFromToken ?? $this->permissionIds;
+
+        return in_array($permissionId, $permissions);
     }
 
     public function checkPassword(string $password): bool

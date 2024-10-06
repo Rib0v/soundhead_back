@@ -23,7 +23,7 @@ class JWTTokenGuard implements Guard
      */
     protected $provider;
 
-    protected JWTAuthService $jwt; //TODO сделать инъекцию через интерфейс
+    protected JWTAuthService $jwt;
 
     /**
      * Да возникнет новый guard!
@@ -32,12 +32,12 @@ class JWTTokenGuard implements Guard
      * @param  \Illuminate\Http\Request  $request
      * @return void
      */
-    public function __construct(UserProvider $provider, Request $request)
+    public function __construct(UserProvider $provider, Request $request, JWTAuthService $jwt)
     {
         $this->request = $request;
         $this->provider = $provider;
         $this->user = null;
-        $this->jwt = new JWTAuthService;
+        $this->jwt = $jwt;
     }
 
     /**
