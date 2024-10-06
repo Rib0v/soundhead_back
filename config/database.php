@@ -34,7 +34,10 @@ return [
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
-            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            // поменял на приём относительного пути, чтобы в phpunit.xml можно было указать просто имя тестовой бд
+            'database' => (env('DB_DATABASE') === ':memory:')
+                ? env('DB_DATABASE')
+                : database_path(env('DB_DATABASE') ?? 'database.sqlite'),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],

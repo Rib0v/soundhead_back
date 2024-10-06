@@ -25,7 +25,7 @@ class IndexResource extends JsonResource
             'price' => $this->price,
             'image' => $baseUrl . '/storage/photos/products' . $this->image,
             'description' => $this->description,
-            'brand' => $this->values[0]->name,
+            'brand' => $this->values[0]->name, // TODO переделать, сделать хелперы и фильтровать по attribute_id
             'form' => $this->values[1]->name,
         ];
     }

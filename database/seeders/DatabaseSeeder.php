@@ -13,6 +13,7 @@ use App\Models\ProductValue;
 use App\Models\Status;
 use App\Models\User;
 use App\Models\Value;
+use App\Services\PermissionService;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Redis;
@@ -39,18 +40,22 @@ class DatabaseSeeder extends Seeder
      * 
      * Есть 6 подтипов наушников:
      * полноразмерные/накладные/вставные,
-     * они дялятся на проводные/беспроводные
+     * они делятся на проводные/беспроводные
      * 
      * У проводных есть одни атрибуты (длина шнура)
      * У беспроводных - другие (bluetooth, etc)
      * 
      * И у каждого типа наушников свой набор фоток, 
      * чтобы сразу было видно, что все фильтры работают.
-     * Ну и просто, чтобы было чуть разнообразнее и симпотичнее :)
+     * Ну и просто, чтобы было чуть разнообразнее и симпатичнее :)
      */
     public function run(): void
     {
-        $this->clearProductsCache();
+        if (config('cache.enabled')) {
+            $this->clearProductsCache();
+        }
+
+        \DB::beginTransaction();
 
         User::factory()->create([
             'name' => 'Семён Семёныч',
@@ -76,8 +81,6 @@ class DatabaseSeeder extends Seeder
             ['name' => 'edit_users', 'description' => 'Может редактировать пользователей и выдавать им права на различные действия.'],
         ]);
 
-        $this->cachePermissionsIds();
-
         PermissionUser::factory()->createMany([
             ['user_id' => 1, 'permission_id' => 1],
             ['user_id' => 1, 'permission_id' => 2],
@@ -85,17 +88,25 @@ class DatabaseSeeder extends Seeder
         ]);
 
         Attribute::factory()->createMany($this->attributes);
-        Redis::set('product_attributes', Attribute::pluck('slug'));
 
         $this->createValues();
-
         $this->createProducts(102);
 
-        $this->cacheProductLists();
+        \DB::commit();
+
+        if (config('cache.enabled')) {
+            PermissionService::cachePermissionsIds();
+            Redis::set('product_attributes', Attribute::pluck('slug'));
+            $this->cacheProductLists();
+        }
     }
 
     private function clearProductsCache(): void
     {
+        if (! config('cache.enabled')) {
+            return;
+        }
+
         $prefix = config('database.redis.options.prefix');
         foreach (Redis::keys('product:*') as $key) {
             $key = ltrim($key, $prefix);
@@ -113,6 +124,10 @@ class DatabaseSeeder extends Seeder
 
     private function cacheProductLists(): void
     {
+        if (! config('cache.enabled')) {
+            return;
+        }
+
         $lastPage = Product::paginate(config('app.products_per_page_default'))->lastPage();
 
         for ($page = 1; $page <= $lastPage; $page++) {
@@ -134,17 +149,6 @@ class DatabaseSeeder extends Seeder
 
             Redis::set("productlist_page:$page", compact('data', 'meta'));
         }
-    }
-
-    private function cachePermissionsIds(): void
-    {
-        $permissionList = [];
-
-        foreach (Permission::all() as $permission) {
-            $permissionList[$permission['name']] = $permission['id'];
-        }
-
-        Redis::set('user_permissions', $permissionList);
     }
 
     private function createValues(): void
@@ -191,6 +195,10 @@ class DatabaseSeeder extends Seeder
 
     private function cacheProduct(int $id): void
     {
+        if (! config('cache.enabled')) {
+            return;
+        }
+
         $product = new SingleResource(Product::findOrFail($id));
         Redis::set("product:$id", $product);
         Redis::set("product_id:{$product->slug}", $id);

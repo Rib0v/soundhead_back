@@ -68,17 +68,25 @@ class ProductService
         ];
     }
 
-    public function getById(int $id): array
+    public function getById(int $productId): array
     {
-        if (!Redis::exists("product:$id")) {
-            $this->cacheProduct($id);
+        if (!config('cache.enabled')) {
+            return (new SingleResource(Product::findOrFail($productId)))->toArray(request());
         }
 
-        return Redis::get("product:$id");
+        if (!Redis::exists("product:$productId")) {
+            $this->cacheProduct($productId);
+        }
+
+        return Redis::get("product:$productId");
     }
 
     public function cacheProduct(int $productId): void
     {
+        if (!config('cache.enabled')) {
+            return;
+        }
+
         $product = new SingleResource(Product::findOrFail($productId));
         Redis::set("product:$productId", $product);
         Redis::set("product_id:{$product->slug}", $productId);
@@ -86,6 +94,10 @@ class ProductService
 
     public function getBySlug(string $slug): array
     {
+        if (!config('cache.enabled')) {
+            return (new SingleResource(Product::where('slug', $slug)->firstOrFail()))->toArray(request());
+        }
+
         if (!Redis::exists("product_id:$slug")) {
             $product = new SingleResource(Product::where('slug', $slug)->firstOrFail());
             Redis::set("product:{$product->id}", $product);
