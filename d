@@ -74,6 +74,12 @@ case "$1" in
     echo "Finished"
     ;;
 
+  test)
+    echo "Runing tests..."
+    docker compose run --rm artisan test ${@:2}
+    echo "Finished"
+    ;;
+
   *)
     echo ""
     echo "  Usage: $0 {command} {params}"
@@ -86,6 +92,7 @@ case "$1" in
     echo "      down — down docker containers"
     echo "      art — run php artisan"
     echo "      comp — run composer"
+    echo "      test — run tests"
     echo "      remigrate — migrate:fresh and seed"
     echo ""
     exit 1

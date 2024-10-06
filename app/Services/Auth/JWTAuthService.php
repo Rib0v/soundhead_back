@@ -2,8 +2,8 @@
 
 namespace App\Services\Auth;
 
+use App\Contracts\TokenRepository;
 use App\Exceptions\JWTValidationException;
-use App\Models\Token;
 use DomainException;
 use Firebase\JWT\BeforeValidException;
 use Firebase\JWT\ExpiredException;
@@ -16,19 +16,24 @@ use UnexpectedValueException;
 
 class JWTAuthService
 {
-    private string $issuer;
-    private string $key;
-    private int $access_ttl;
-    private int $refresh_ttl;
-    private int $leeway;
+    protected string $issuer;
+    protected string $key;
+    protected int $access_ttl;
+    protected int $refresh_ttl;
+    protected int $leeway;
+    protected TokenRepository $tokenRepository;
 
-    public function __construct()
+    public function __construct(array $config, TokenRepository $tokenRepository)
     {
-        $this->issuer = config('jwt.issuer');
-        $this->key = config('jwt.key');
-        $this->access_ttl = config('jwt.access_ttl');
-        $this->refresh_ttl = config('jwt.refresh_ttl');
-        $this->leeway = config('jwt.leeway');
+        // TODO заменить array на DTO
+
+        $this->issuer = $config['issuer'];
+        $this->key = $config['key'];
+        $this->access_ttl = $config['access_ttl'];
+        $this->refresh_ttl = $config['refresh_ttl'];
+        $this->leeway = $config['leeway'];
+
+        $this->tokenRepository = $tokenRepository;
     }
 
     /**
@@ -38,9 +43,9 @@ class JWTAuthService
      * @param array $permissions
      * @return array ['access', 'refresh', 'access_exp', 'refresh_minutes']
      */
-    public function create(int $userId, array $permissions = []): array
+    public function create(int $userId, array $permissions = [], ?int $time = null): array
     {
-        $time = time();
+        $time ??= time();
         $expiredAccess = $time + 60 * $this->access_ttl;
         $expiredRefresh = $time + 60 * $this->refresh_ttl;
 
@@ -65,9 +70,10 @@ class JWTAuthService
         $jwtAccess = JWT::encode($payloadAccess, $this->key, 'HS256');
         $jwtRefresh = JWT::encode($payloadRefresh, $this->key, 'HS256');
 
-        Token::updateOrCreate(
-            ['user_id' => $userId],
-            ['token' => $jwtRefresh, 'expired_at' => date('Y-m-d H:i:s', $expiredRefresh)],
+        $this->tokenRepository->saveRefreshToken(
+            userId: $userId,
+            token: $jwtRefresh,
+            expiredTimestamp: $expiredRefresh
         );
 
         return [
@@ -86,7 +92,7 @@ class JWTAuthService
      * @return stdClass decoded payload
      * @throws JWTValidationException 403 = просрочен, 401 = валидация провалена
      */
-    public function check(?string $token): stdClass
+    public function decode(?string $token): stdClass
     {
         if (!$token) {
             throw new JWTValidationException("Токен не найден.", 401);
@@ -96,8 +102,7 @@ class JWTAuthService
 
         try {
             $decoded = JWT::decode($token, new Key($this->key, 'HS256'));
-            $permissions = explode(',', $decoded->per);
-            $decoded->per = array_map(fn($permission) => (int)$permission, $permissions);
+            $decoded->per = $this->permissionsFromTokenToArray($decoded->per);
         } catch (InvalidArgumentException $e) {
             throw new JWTValidationException("Ключ отсутствует, или имеет неверный формат.", 401);
         } catch (DomainException $e) {
@@ -116,6 +121,23 @@ class JWTAuthService
     }
 
     /**
+     * Преобразование строковых данных
+     * из токена в целочисленный массив
+     * 
+     * @param string $permissions
+     * @return int[]
+     */
+    protected function permissionsFromTokenToArray(string $permissions): array
+    {
+        if ($permissions === '') {
+            return [];
+        }
+
+        $permissions = explode(',', $permissions);
+        return array_map(fn($permission) => (int)$permission, $permissions);
+    }
+
+    /**
      * Проверка access токена
      * 
      * @param string|null $token
@@ -124,13 +146,13 @@ class JWTAuthService
      */
     public function checkAccess(?string $token): stdClass
     {
-        $checked = $this->check($token);
+        $decoded = $this->decode($token);
 
-        if ($checked->typ !== 'AT') {
+        if ($decoded->typ !== 'AT') {
             throw new JWTValidationException("Токен не является типом access.", 401);
         }
 
-        return $checked;
+        return $decoded;
     }
 
     /**
@@ -142,17 +164,17 @@ class JWTAuthService
      */
     public function checkRefresh(?string $token): stdClass
     {
-        $checked = $this->check($token);
+        $decoded = $this->decode($token);
 
-        if ($checked->typ !== 'RT') {
+        if ($decoded->typ !== 'RT') {
             throw new JWTValidationException("Токен не является типом refresh.", 401);
         }
 
-        if (Token::where('token', $token)->doesntExist()) {
+        if (! $this->tokenRepository->isRefreshTokenExists($token)) {
             throw new JWTValidationException("Refresh-токен недействителен.", 403);
         }
 
-        return $checked;
+        return $decoded;
     }
 
     /**
@@ -164,9 +186,9 @@ class JWTAuthService
      */
     public function refresh(?string $token): array
     {
-        $checked = $this->checkRefresh($token);
+        $decoded = $this->checkRefresh($token);
 
-        return ['decoded' => $checked, 'tokens' => $this->create($checked->sub, $checked->per)];
+        return ['decoded' => $decoded, 'tokens' => $this->create($decoded->sub, $decoded->per)];
     }
 
     /**
@@ -178,13 +200,13 @@ class JWTAuthService
      */
     public function destroy(?string $token): void
     {
-        $checked = $this->check($token);
+        $decoded = $this->decode($token);
 
-        if ($checked->typ !== 'RT') {
+        if ($decoded->typ !== 'RT') {
             throw new JWTValidationException("Токен не является типом refresh.", 403);
         }
 
-        $deleted = Token::where('token', $token)->delete();
+        $deleted = $this->tokenRepository->removeRefreshToken($token);
 
         if (!$deleted) {
             throw new JWTValidationException("Токен не найден в базе.", 403);

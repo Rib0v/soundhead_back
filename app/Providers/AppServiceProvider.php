@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Services\Auth\CustomGate;
+use App\Services\Auth\JWTAuthService;
 use App\Services\Auth\JWTTokenGuard;
+use App\Services\Auth\TokenRepositoryService;
 use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
@@ -17,8 +19,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(GateContract::class, function ($app) {
+        $this->app->singleton(GateContract::class, function (Application $app) {
             return new CustomGate($app, fn() => $app['auth']->user());
+        });
+
+        $this->app->singleton(JWTAuthService::class, function () {
+            return new JWTAuthService(config('jwt'), new TokenRepositoryService);
         });
     }
 
@@ -28,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Auth::extend('jwt', function (Application $app, string $name, array $config) {
-            return new JWTTokenGuard(Auth::createUserProvider($config['provider']), $app['request']);
+            return new JWTTokenGuard(Auth::createUserProvider($config['provider']), $app['request'], $app->make(JWTAuthService::class));
         });
     }
 }

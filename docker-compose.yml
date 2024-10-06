@@ -67,7 +67,6 @@ services:
 
     redis:
         image: redis:6.0.20-alpine
-        user: ${DOCKER_USER}
         networks:
             - soundhead
 

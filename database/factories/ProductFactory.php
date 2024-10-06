@@ -20,6 +20,7 @@ class ProductFactory extends Factory
         return [
             'name' => $name,
             'price' => (fake()->numberBetween(10, 400)) * 100,
+            'slug' => $name,
             'description' => fake()->paragraph(14),
             'min_frequency' => fake()->numberBetween(30, 100),
             'max_frequency' => fake()->numberBetween(18, 30),
