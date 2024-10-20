@@ -2,41 +2,41 @@
 
 namespace Database\Seeders;
 
-use App\Http\Resources\Product\IndexResource;
-use App\Http\Resources\Product\SingleResource;
 use App\Models\Attribute;
 use App\Models\Permission;
 use App\Models\PermissionUser;
 use App\Models\Photo;
 use App\Models\Product;
 use App\Models\ProductValue;
-use App\Models\Status;
 use App\Models\User;
-use App\Models\Value;
+use App\Services\Cache\CacheService;
 use App\Services\PermissionService;
+use App\Services\ProductService;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Database\Seeders\ValueSeeder;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
-    private array $attributes;
-    private array $values;
     private array $photos;
     private array $typesCounter;
+    private CacheService $cache;
+    private ProductService $productService;
 
     public function __construct()
     {
         require_once('attributes.php');
 
-        $this->attributes = $attributes;
-        $this->values = $values;
         $this->photos = $photos;
         $this->typesCounter = $typesCounter;
+
+        $this->cache = app(CacheService::class);
+        $this->productService = app(ProductService::class);
     }
 
     /**
-     * Почему тут так всё замороченно:
+     * Почему тут так всё заморочено:
      * 
      * Есть 6 подтипов наушников:
      * полноразмерные/накладные/вставные,
@@ -47,15 +47,13 @@ class DatabaseSeeder extends Seeder
      * 
      * И у каждого типа наушников свой набор фоток, 
      * чтобы сразу было видно, что все фильтры работают.
-     * Ну и просто, чтобы было чуть разнообразнее и симпатичнее :)
+     * Ну и в целом, чтобы лучше воспринималось визуально
      */
     public function run(): void
     {
-        if (config('cache.enabled')) {
-            $this->clearProductsCache();
-        }
+        $this->productService->clearProductCache();
 
-        \DB::beginTransaction();
+        DB::beginTransaction();
 
         User::factory()->create([
             'name' => 'Семён Семёныч',
@@ -67,13 +65,7 @@ class DatabaseSeeder extends Seeder
 
         // User::factory(10)->create();
 
-        Status::factory()->createMany([
-            ['name' => 'Создан, ожидает подтверждения.'],
-            ['name' => 'Подтверждён, ожидает оплаты.'],
-            ['name' => 'Оплачен, ожидает отправки.'],
-            ['name' => 'Отправлен.'],
-            ['name' => 'Завершён.'],
-        ]);
+        $this->call(OrderStatusSeeder::class);
 
         Permission::factory()->createMany([
             ['name' => 'edit_orders', 'description' => 'Может обрабатывать заказы и смотреть информацию о пользователях.'],
@@ -87,160 +79,29 @@ class DatabaseSeeder extends Seeder
             ['user_id' => 1, 'permission_id' => 3],
         ]);
 
-        Attribute::factory()->createMany($this->attributes);
+        $this->call(AttributeSeeder::class);
+        $this->call(ValueSeeder::class);
 
-        $this->createValues();
         $this->createProducts(102);
 
-        \DB::commit();
+        DB::commit();
 
-        if (config('cache.enabled')) {
-            PermissionService::cachePermissionsIds();
-            Redis::set('product_attributes', Attribute::pluck('slug'));
-            $this->cacheProductLists();
-        }
-    }
-
-    private function clearProductsCache(): void
-    {
-        if (! config('cache.enabled')) {
-            return;
-        }
-
-        $prefix = config('database.redis.options.prefix');
-        foreach (Redis::keys('product:*') as $key) {
-            $key = ltrim($key, $prefix);
-            Redis::del($key);
-        }
-        foreach (Redis::keys('product_id:*') as $key) {
-            $key = ltrim($key, $prefix);
-            Redis::del($key);
-        }
-        foreach (Redis::keys('productlist_page:*') as $key) {
-            $key = ltrim($key, $prefix);
-            Redis::del($key);
-        }
-    }
-
-    private function cacheProductLists(): void
-    {
-        if (! config('cache.enabled')) {
-            return;
-        }
-
-        $lastPage = Product::paginate(config('app.products_per_page_default'))->lastPage();
-
-        for ($page = 1; $page <= $lastPage; $page++) {
-
-            $products = Product::paginate(
-                config('app.products_per_page_default'),
-                ['*'],
-                'page',
-                $page
-            );
-
-            $data = IndexResource::collection($products);
-
-            $meta = [
-                'current_page' => $products->currentPage(),
-                'last_page' => $products->lastPage(),
-                'total' => $products->total(),
-            ];
-
-            Redis::set("productlist_page:$page", compact('data', 'meta'));
-        }
-    }
-
-    private function createValues(): void
-    {
-        foreach ($this->values as $key => $item) {
-            foreach ($item as $value) {
-                Value::factory()->create([
-                    'name' => $value,
-                    'attribute_id' => $key + 1,
-                ]);
-            }
-        }
+        $this->cacheItems();
     }
 
     private function createProducts(int $quantity): void
     {
         for ($id = 1; $id <= $quantity; $id++) {
             $this->createProductWithAttributes($id);
-            $this->cacheProduct($id);
+            $this->productService->cacheById($id);
         }
-    }
-
-    private function createProductAttribute(int $productId, int $valueId): void
-    {
-        ProductValue::factory()->create([
-            'product_id' => $productId,
-            'value_id' => $valueId,
-        ]);
-    }
-
-    private function generateName(int $brandId): string
-    {
-        $brand = $this->values[0][$brandId - 1];
-        $name = fake()->word();
-        $code = (fake()->text(5))[0] . rand(30, 200);
-
-        return "$brand $name $code";
-    }
-
-    private function nameToSlug(string $name): string
-    {
-        return strtolower(str_replace(' ', '-', $name));
-    }
-
-    private function cacheProduct(int $id): void
-    {
-        if (! config('cache.enabled')) {
-            return;
-        }
-
-        $product = new SingleResource(Product::findOrFail($id));
-        Redis::set("product:$id", $product);
-        Redis::set("product_id:{$product->slug}", $id);
-    }
-
-    private function createProductWithPhotos(int $productId, int $brandId, string $form, string $wire): void
-    {
-        $name = $this->generateName($brandId);
-        $slug = $this->nameToSlug($name);
-        $count = $this->typesCounter[$wire][$form];
-        $lastPhoto = $this->photos[$wire][$form][$count - 1];
-
-        Product::factory()->create([
-            'name' => $name,
-            'slug' => $slug,
-            'image' => "/$wire/$form/$count/0.webp"
-        ]);
-
-        for ($i = 1; $i <= $lastPhoto; $i++) {
-            Photo::factory()->create([
-                'url' => "/$wire/$form/$count/$i.webp",
-                'product_id' => $productId,
-            ]);
-        }
-
-        $this->typesCounter[$wire][$form] = $count < 5 ? ++$count : 1;
     }
 
     private function createProductWithAttributes(int $productId): void
     {
-
         $brand = rand(1, 20);
-        $this->createProductAttribute($productId, $brand); // brand
-
         $form = rand(21, 23);
-        $this->createProductAttribute($productId, $form); // form
-
         $wire = rand(24, 25);
-        $this->createProductAttribute($productId, $wire); // wireTypes
-
-        $this->createProductAttribute($productId, rand(26, 28)); // acousticTypes
-        $this->createProductAttribute($productId, rand(29, 30)); // deNoise
 
         if ($form === 21) { // Вставные
             if ($wire === 24) { // Проводные
@@ -273,5 +134,62 @@ class DatabaseSeeder extends Seeder
             $this->createProductAttribute($productId, rand(41, 44)); // connector
             $this->createProductAttribute($productId, rand(45, 46)); // fastCharge
         }
+
+        $this->createProductAttribute($productId, $brand); // brand
+        $this->createProductAttribute($productId, $form); // form
+        $this->createProductAttribute($productId, $wire); // wireTypes
+        $this->createProductAttribute($productId, rand(26, 28)); // acousticTypes
+        $this->createProductAttribute($productId, rand(29, 30)); // deNoise
+    }
+
+    private function createProductAttribute(int $productId, int $valueId): void
+    {
+        ProductValue::factory()->create([
+            'product_id' => $productId,
+            'value_id' => $valueId,
+        ]);
+    }
+
+    private function createProductWithPhotos(int $productId, int $brandId, string $form, string $wire): void
+    {
+        $name = $this->generateName($brandId);
+        $count = $this->typesCounter[$wire][$form];
+        $lastPhotoNumber = $this->photos[$wire][$form][$count - 1];
+
+        Product::factory()->create([
+            'name' => $name,
+            'slug' => toSlug($name),
+            'image' => "/$wire/$form/$count/0.webp"
+        ]);
+
+        for ($i = 1; $i <= $lastPhotoNumber; $i++) {
+            Photo::factory()->create([
+                'url' => "/$wire/$form/$count/$i.webp",
+                'product_id' => $productId,
+            ]);
+        }
+
+        $this->typesCounter[$wire][$form] = $count < 5 ? ++$count : 1;
+    }
+
+    private function generateName(int $brandId): string
+    {
+        $brand = ValueSeeder::getBrandById($brandId);
+        $name = fake()->word();
+        $code = (fake()->text(5))[0] . rand(30, 200);
+
+        return "$brand $name $code";
+    }
+
+    private function cacheItems(): void
+    {
+        PermissionService::cachePermissionsIds();
+
+        $this->cache->cacheOnEveryCall('product_attributes', fn() => Attribute::pluck('slug'));
+
+        $this->productService->cacheProductListPages(
+            firstPage: 1,
+            lastPage: Product::paginate(config('app.products_per_page_default'))->lastPage(),
+        );
     }
 }

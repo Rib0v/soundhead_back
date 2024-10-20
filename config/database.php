@@ -18,6 +18,8 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'log' => env('DB_LOG', false),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections

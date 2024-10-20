@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 
 class CreateTestDatabaseCommand extends Command
 {
@@ -29,12 +31,20 @@ class CreateTestDatabaseCommand extends Command
 
         $testDbPath = database_path('database-test.sqlite');
 
-        if (file_exists($testDbPath)) {
-            if (!$force) {
-                $this->warn('Тестовая БД уже существует. Используйте флаг --force чтобы пересоздать её заново.');
-                return;
-            };
+        if (file_exists($testDbPath) && !$force) {
+            $this->warn('Тестовая БД уже существует. Используйте флаг --force чтобы пересоздать её заново.');
+            return 1;
+        }
 
+        $this->createDb($testDbPath);
+
+        $this->info('Тестовая БД успешно создана.');
+        return 0;
+    }
+
+    protected function createDb(string $testDbPath): void
+    {
+        if (file_exists($testDbPath)) {
             unlink($testDbPath);
         }
 
@@ -43,9 +53,7 @@ class CreateTestDatabaseCommand extends Command
         config()->set('cache.enabled', false);
         config()->set('database.default', 'sqlite');
         config()->set('database.connections.sqlite.database', $testDbPath);
-        \DB::reconnect();
-        \Artisan::call('migrate --seed');
-
-        $this->info('Тестовая БД успешно создана.');
+        DB::reconnect();
+        Artisan::call('migrate --seed');
     }
 }

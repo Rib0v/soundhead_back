@@ -14,16 +14,12 @@ class CompareResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $baseUrl = config('app.env') === 'production'
-            ? config('app.url')
-            : config('app.url') . ':' . config('app.port');
-
         return [
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
             'price' => $this->price,
-            'image' => $baseUrl . '/storage/photos/products' . $this->image,
+            'image' => getBaseUrl() . '/storage/photos/products' . $this->image,
             'description' => $this->description,
             'attributes' => $this->getAttributes()
         ];

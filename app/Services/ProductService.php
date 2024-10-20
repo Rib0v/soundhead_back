@@ -6,57 +6,53 @@ use App\Http\Resources\Product\CompareResource;
 use App\Http\Resources\Product\IndexResource;
 use App\Http\Resources\Product\SingleResource;
 use App\Models\Product;
+use App\Services\Cache\CacheService;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Redis;
 
 class ProductService
 {
-    public function isRequestWithoutFilters(Request $request): bool
+    public function __construct(protected CacheService $cacheService) {}
+
+    public function isRequestWithoutFilters(array $requestQuery): bool
     {
-        if (!count($request->query())) return true;
+        if (empty($requestQuery)) return true;
 
-        if (count($request->query()) === 1 && (int)$request->query('page')) return true;
+        $filtersCount = count($requestQuery);
+        $hasValidPage = (isset($requestQuery['page']) && is_numeric($requestQuery['page']));
+        $hasDefaultPerPage = (isset($requestQuery['perpage']) && $requestQuery['perpage'] === config('app.products_per_page_default'));
 
-        if (
-            count($request->query()) === 1
-            && $request->query('perpage') === config('app.products_per_page_default')
-        ) return true;
-
-        if (
-            count($request->query()) === 2
-            && (int)$request->query('page')
-            && $request->query('perpage') === config('app.products_per_page_default')
-        ) return true;
+        if ($filtersCount === 1 && $hasValidPage) return true;
+        if ($filtersCount === 1 && $hasDefaultPerPage) return true;
+        if ($filtersCount === 2 && $hasValidPage && $hasDefaultPerPage) return true;
 
         return false;
     }
 
-    public function getCachedPage(Request $request): array
+    public function getCachedPage(int $page): array
     {
-        $page = (int)$request->query('page', 1);
-
-        if (!Redis::exists("productlist_page:$page")) {
-            $products = Product::paginate(config('app.products_per_page_default'), ['*'], 'page', $page);
-            $data = IndexResource::collection($products);
-            $meta = $this->getMeta($products);
-            Redis::set("productlist_page:$page", compact('data', 'meta'));
-        }
-
-        return Redis::get("productlist_page:$page");
+        return $this->cacheService->cacheAndGet("productlist_page:$page", fn() => $this->getProducts($page));
     }
 
-    public function getFirstPage(): array
+    public function cacheProductListPages(int $firstPage, int $lastPage): int
     {
-        if (!Redis::exists('products_first_page')) {
-            $products = Product::paginate(config('app.products_per_page_default'));
-            $data = IndexResource::collection($products);
-            $meta = $this->getMeta($products);
-            Redis::set('products_first_page', compact('data', 'meta'));
+        $count = 0;
+
+        for ($page = $firstPage; $page <= $lastPage; $page++) {
+            $count += (int)$this->cacheService->cacheOnEveryCall("productlist_page:$page", fn() => $this->getProducts($page));
         }
 
-        return Redis::get('products_first_page');
+        return $count;
+    }
+
+    protected function getProducts(int $page): array
+    {
+        $products = Product::with('values')->paginate(config('app.products_per_page_default'), ['*'], 'page', $page);
+
+        return  [
+            'data' => IndexResource::collection($products),
+            'meta' => $this->getMeta($products),
+        ];
     }
 
     public function getMeta(LengthAwarePaginator $paginator): array
@@ -70,49 +66,64 @@ class ProductService
 
     public function getById(int $productId): array
     {
-        if (!config('cache.enabled')) {
-            return (new SingleResource(Product::findOrFail($productId)))->toArray(request());
+        $product = $this->cacheService->cacheAndGet("product:$productId", fn() => $this->getProductById($productId));
+
+        if (!empty($product['slug'])) {
+            $this->cacheService->cacheOnce("product_id:{$product['slug']}", fn() => $productId);
         }
 
-        if (!Redis::exists("product:$productId")) {
-            $this->cacheProduct($productId);
-        }
-
-        return Redis::get("product:$productId");
+        return $product;
     }
 
-    public function cacheProduct(int $productId): void
+    public function cacheSingleProductPages(int $firstId, int $lastId): int
     {
-        if (!config('cache.enabled')) {
-            return;
+        $count = 0;
+
+        for ($id = $firstId; $id <= $lastId; $id++) {
+            $count += (int)$this->cacheById($id);
         }
 
-        $product = new SingleResource(Product::findOrFail($productId));
-        Redis::set("product:$productId", $product);
-        Redis::set("product_id:{$product->slug}", $productId);
+        return $count;
+    }
+
+    public function cacheById(int $productId): bool
+    {
+        $product = $this->getProductById($productId);
+        $productIsCached = $this->cacheService->cacheOnEveryCall("product:$productId", fn() => $product);
+        $slugIsCached = $this->cacheService->cacheOnEveryCall("product_id:{$product['slug']}", fn() => $productId);
+
+        return $productIsCached && $slugIsCached;
+    }
+
+    protected function getProductById($productId): array
+    {
+        $product = Product::with(['values.attribute'])->where('products.id', $productId)->firstOrFail();
+        return (new SingleResource($product))->getArray();
     }
 
     public function getBySlug(string $slug): array
     {
-        if (!config('cache.enabled')) {
-            return (new SingleResource(Product::where('slug', $slug)->firstOrFail()))->toArray(request());
-        }
+        $productId = $this->cacheService->cacheAndGet("product_id:$slug", fn() => Product::where('slug', $slug)->valueOrFail('id'));
 
-        if (!Redis::exists("product_id:$slug")) {
-            $product = new SingleResource(Product::where('slug', $slug)->firstOrFail());
-            Redis::set("product:{$product->id}", $product);
-            Redis::set("product_id:$slug", $product->id);
-        }
+        return $this->getById($productId);
+    }
 
-        $productId = Redis::get("product_id:$slug");
-        return Redis::get("product:$productId");
+    public function reCacheProduct(Product $product): void
+    {
+        $this->cacheService->cacheOnEveryCall("product:{$product->id}", fn() => new SingleResource($product));
+        $this->cacheService->cacheOnEveryCall("product_id:{$product->slug}", fn() => $product->id);
+    }
+
+    public function clearProductCache(): int
+    {
+        return $this->cacheService->delCollections(['product', 'product_id', 'productlist_page']);
     }
 
     public function getProductsToCompare(string $query): Collection
     {
         $productsIDs = explode(',', $query);
 
-        return Product::whereIn('id', $productsIDs)->limit(10)->get();
+        return Product::with(['values.attribute'])->whereIn('id', $productsIDs)->limit(10)->get();
     }
 
     public function getProductsToCart(string $query): Collection
@@ -122,10 +133,9 @@ class ProductService
         return Product::whereIn('id', $productsIDs)->limit(100)->get();
     }
 
-    public function getFormattedData($products, $request)
+    public function getFormattedData($products)
     {
-
-        $productsCollection = CompareResource::collection($products)->toArray($request);
+        $productsCollection = CompareResource::collection($products)->jsonSerialize();
         $allAttributes = $this->getAllAttributes($productsCollection);
         $preparedProducts = $this->prepareProducts($productsCollection, $allAttributes);
 
@@ -157,6 +167,7 @@ class ProductService
                 }
             }
         }
+
         return $products;
     }
 }

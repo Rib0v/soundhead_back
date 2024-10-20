@@ -3,13 +3,13 @@
 namespace App\Services;
 
 use App\Models\Permission;
-use Illuminate\Support\Facades\Redis;
+use App\Services\Cache\CacheService;
 
 class PermissionService
 {
     public static function getPermissionId(string $permission): int
     {
-        $permissions = self::getCachedPermissions();
+        $permissions = app(CacheService::class)->cacheAndGet('user_permissions', fn() => self::getPermissions());
 
         if (!isset($permissions[$permission])) {
             throw new \Exception("Invalid permission name: '$permission'");
@@ -18,23 +18,13 @@ class PermissionService
         return $permissions[$permission];
     }
 
-    public static function getCachedPermissions(): array
-    {
-        if (!Redis::exists('user_permissions')) {
-            self::cachePermissionsIds();
-        }
-
-        return Redis::get('user_permissions');
-    }
-
     public static function cachePermissionsIds(): void
     {
-        $permissionList = [];
+        app(CacheService::class)->cacheOnEveryCall('user_permissions', fn() => self::getPermissions());
+    }
 
-        foreach (Permission::all() as $permission) {
-            $permissionList[$permission['name']] = $permission['id'];
-        }
-
-        Redis::set('user_permissions', $permissionList);
+    protected static function getPermissions(): array
+    {
+        return Permission::select('id', 'name')->get()->pluck('id', 'name')->toArray() ?? [];
     }
 }

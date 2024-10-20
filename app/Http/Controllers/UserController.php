@@ -12,17 +12,15 @@ use App\Models\User;
 use App\Services\Auth\JWTAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
 {
     /**
      * Список пользователей
      * 
-     * @param Request $request
      * @return Response
      */
-    public function index(Request $request): Response
+    public function index(): Response
     {
         return response(IndexResource::collection(User::paginate(20)));
     }
@@ -70,9 +68,8 @@ class UserController extends Controller
      */
     public function changePassword(User $user, ChangePasswordRequest $request): Response
     {
-        $validated = $request->validated();
-
-        $user->password = $validated['new_password']; // пароль хешируется автоматически
+        // Вся логика валидации находится внутри запроса
+        $user->password = $request->newPassword; // пароль хешируется автоматически
         $user->save();
 
         return response(['message' => 'Пароль изменён.', 'user' => $user]);
@@ -87,7 +84,7 @@ class UserController extends Controller
      */
     public function changeAddress(User $user, ChangeAddressRequest $request): Response
     {
-        $user->address = $request->validated()['address'];
+        $user->address = $request->address;
         $user->save();
 
         return response(['message' => 'Адрес изменён.', 'user' => $user]);
@@ -102,10 +99,8 @@ class UserController extends Controller
      */
     public function changeProfile(User $user, ChangeProfileRequest $request): Response
     {
-        $validated = $request->validated();
-
-        $user->name = $validated['name'];
-        $user->phone = $validated['phone'];
+        $user->name = $request->name;
+        $user->phone = $request->phone;
         $user->save();
 
         return response(['message' => 'Имя и телефон изменены.', 'user' => $user]);
@@ -120,9 +115,7 @@ class UserController extends Controller
      */
     public function changeEmail(User $user, ChangeEmailRequest $request): Response
     {
-        $validated = $request->validated();
-
-        $user->email = $validated['email'];
+        $user->email = $request->email;
         $user->save();
 
         return response(['message' => 'Email изменён.', 'user' => $user]);
@@ -136,7 +129,10 @@ class UserController extends Controller
      */
     public function destroy(User $user): Response
     {
-        if ($user->token) $user->token->delete();
+        if ($user->token) {
+            $user->token->delete();
+        }
+
         $user->delete();
 
         return response(['message' => 'Пользователь удалён.', 'user' => $user]);

@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\AttributeService;
+use App\Http\Resources\AttributeResource;
+use App\Models\Attribute;
 use Illuminate\Http\Response;
 
 class AttributeController extends Controller
@@ -10,16 +11,11 @@ class AttributeController extends Controller
     /**
      * Список всех доступных характеристик товаров
      * 
-     * @param AttributeService $service
-     * 
      * @return Response
      */
-    public function index(AttributeService $service): Response
+    public function index(): Response
     {
-        $filters = $service->getFilters();
-
-        $formattedFilters = $service->formatFilters($filters);
-
-        return response($formattedFilters);
+        $attributes = Attribute::with('values')->get();
+        return response(AttributeResource::collection($attributes));
     }
 }

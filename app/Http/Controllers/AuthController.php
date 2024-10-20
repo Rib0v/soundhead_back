@@ -16,15 +16,12 @@ class AuthController extends Controller
      * 
      * @param LoginRequest $request
      * @param JWTAuthService $jwt
-     * @param AuthService $service
      * 
      * @return Response
      */
     public function login(LoginRequest $request, JWTAuthService $jwt): Response
     {
-        $validated = $request->validated();
-
-        if (!Auth::validate(['email' => $validated['email'], 'password' => $validated['password']])) {
+        if (!Auth::validate(['email' => $request->email, 'password' => $request->password])) {
             return response(['errors' => ['email' => ['Неверный логин или пароль.']]], 401);
         }
 
@@ -39,11 +36,6 @@ class AuthController extends Controller
             ->cookie('refresh', $tokens['refresh'], $tokens['refresh_minutes'], '/', getAppUrl(), false, true);
     }
 
-    public function test()
-    {
-        return response(['message' => 'test']);
-    }
-
     /**
      * Проверка access токена
      * 
@@ -54,13 +46,17 @@ class AuthController extends Controller
      */
     public function checkAccess(Request $request, JWTAuthService $jwt): Response
     {
-        try {
-            $token = $request->bearerToken();
-            $checked = $jwt->checkAccess($token);
-            return response(['decoded' => $checked]);
-        } catch (\Exception $e) {
-            return response(['message' => $e->getMessage()], $e->getCode());
-        }
+        /**
+         * В случае неудачной проверки токена
+         * выбрасывается кастомное исключение
+         * App\Exceptions\JWTValidationException
+         * которое генерирует Response.
+         * Это касается всех методов, в которых
+         * происходит проверка токена.
+         */
+        $token = $request->bearerToken();
+        $checked = $jwt->checkAccess($token);
+        return response(['decoded' => $checked]);
     }
 
     /**
@@ -73,13 +69,9 @@ class AuthController extends Controller
      */
     public function checkRefresh(Request $request, JWTAuthService $jwt): Response
     {
-        try {
-            $token = $request->cookie('refresh');
-            $checked = $jwt->checkRefresh($token);
-            return response(['decoded' => $checked]);
-        } catch (\Exception $e) {
-            return response(['message' => $e->getMessage()], $e->getCode());
-        }
+        $token = $request->cookie('refresh');
+        $checked = $jwt->checkRefresh($token);
+        return response(['decoded' => $checked]);
     }
 
     /**
@@ -87,33 +79,28 @@ class AuthController extends Controller
      * 
      * @param Request $request
      * @param JWTAuthService $jwt
-     * @param AuthService $service
      * 
      * @return Response
      */
     public function refresh(Request $request, JWTAuthService $jwt): Response
     {
-        try {
-            $refreshed = $jwt->refresh($request->cookie('refresh'));
+        $refreshed = $jwt->refresh($request->cookie('refresh'));
 
-            return response([
+        return response([
 
-                'user_id' => $refreshed['decoded']->sub,
-                'access' => $refreshed['tokens']['access'],
-                'access_exp' => $refreshed['tokens']['access_exp']
+            'user_id' => $refreshed['decoded']->sub,
+            'access' => $refreshed['tokens']['access'],
+            'access_exp' => $refreshed['tokens']['access_exp']
 
-            ])->cookie(
-                'refresh',
-                $refreshed['tokens']['refresh'],
-                $refreshed['tokens']['refresh_minutes'],
-                '/',
-                getAppUrl(),
-                false,
-                true
-            );
-        } catch (\Exception $e) {
-            return response(['message' => $e->getMessage()], $e->getCode())->withoutCookie('refresh');
-        }
+        ])->cookie(
+            'refresh',
+            $refreshed['tokens']['refresh'],
+            $refreshed['tokens']['refresh_minutes'],
+            '/',
+            getAppUrl(),
+            false,
+            true
+        );
     }
 
     /**
@@ -135,5 +122,10 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response(['message' => $e->getMessage() . 'Удалён из куков.'], $e->getCode())->withoutCookie('refresh');
         }
+    }
+
+    public function test()
+    {
+        return response(['message' => 'test']);
     }
 }

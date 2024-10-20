@@ -3,87 +3,55 @@
 namespace App\Services;
 
 use App\Models\Product;
-use App\Models\Status;
-use Illuminate\Http\Request;
+use App\Models\User;
 
 class OrderService
 {
-    public function __construct(private JWTAuthService $jwt)
+    public function getPreparedOrderAndProducts(array $order, ?User $user): array
     {
+        $productsWithPrices = $this->addActualPricesFromDB($order['products']);
+        $preparedOrder = $this->prepareTheOrder($order, $productsWithPrices, $user);
+
+        return [$preparedOrder, $productsWithPrices];
     }
 
-    public function checkStatusId(int $statusId): bool
-    {
-        $maxStatusId = Status::orderByDesc('id')->first()->id;
-        return $statusId <= $maxStatusId;
-    }
-
-    public function addActualPricesFromDB(array $products): array
+    protected function addActualPricesFromDB(array $products): array
     {
         $productsIDs = array_column($products, 'product_id');
 
-        $productsPrices = Product::select('id', 'price')->whereIn('id', $productsIDs)->get();
+        $productsWithPrices = Product::select('id', 'price')->whereIn('id', $productsIDs)->get();
 
-        $priceAssoc = [];
-
-        foreach ($productsPrices as $product) {
-            $priceAssoc[$product['id']] = $product['price'];
-        }
-
-        foreach ($products as $key => $product) {
-            $products[$key]['price'] = $priceAssoc[$product['product_id']];
+        foreach ($products as &$product) {
+            $product['price'] = $productsWithPrices->find($product['product_id'])->price;
         }
 
         return $products;
     }
 
-    public function prepareTheOrder(array $validated, Request $request): array
+    protected function prepareTheOrder(array $order, array $products, ?User $user): array
     {
-        $totalPrice = $this->calculateTotalPrice($validated['products']);
-        $userId = $this->getUserIdFromToken($request);
-        $formedOrder = $this->formatTheOrder($validated, $totalPrice, $userId);
+        unset($order['products']);
 
-        return $formedOrder;
-    }
+        $order['total'] = $this->calculateTotalPrice($products);
 
-    private function calculateTotalPrice(array $products): int
-    {
-        return array_reduce($products, fn ($accum, $product) => $accum += $product['count'] * $product['price']);
-    }
+        if (! is_null($user)) {
+            $user->get();
 
-    private function getUserIdFromToken(Request $request): int
-    {
-        $userId = 0;
-        $access = $request->bearerToken();
-        $refresh = $request->cookie('refresh');
-
-        try {
-            $checked = $this->jwt->checkAccess($access);
-            $userId = $checked->sub;
-        } catch (\Throwable $th) {
-            try {
-                $checked = $this->jwt->checkRefresh($refresh);
-                $userId = $checked->sub;
-            } catch (\Throwable $th) {
-            }
+            $order = [
+                ...$order,
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'phone' => $user->phone,
+                'email' => $user->email,
+                'address' => $user->address,
+            ];
         }
 
-        return $userId;
+        return $order;
     }
 
-    private function formatTheOrder(array $validated, int $totalPrice, int $userId): array
+    protected function calculateTotalPrice(array $products): int
     {
-        $order = [
-            'name' => $validated['name'],
-            'phone' => $validated['phone'],
-            'email' => $validated['email'],
-            'address' => $validated['address'],
-            'comment' => $validated['comment'],
-            'total' => $totalPrice,
-        ];
-
-        if ($userId > 0) $order['user_id'] = $userId;
-
-        return $order;
+        return array_reduce($products, fn($sum, $product) => $sum += $product['count'] * $product['price']);
     }
 }

@@ -26,9 +26,9 @@ class GenerateSwaggerCommand extends Command
     public function handle()
     {
         $openApi = \OpenApi\Generator::scan($this->getPathList());
-        $res = file_put_contents($this->getYamlFilePath(), $openApi->toYaml());
+        $result = file_put_contents($this->getYamlFilePath(), $openApi->toYaml());
 
-        $this->showResultMessage($res);
+        $this->showResultMessage($result);
     }
 
     private function getPathList(): array

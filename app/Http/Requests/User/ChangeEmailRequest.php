@@ -6,6 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ChangeEmailRequest extends FormRequest
 {
+    public string $email;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -34,5 +36,10 @@ class ChangeEmailRequest extends FormRequest
             'password' => 'required|min:3|current_password',
             'email' => 'required|string|email',
         ];
+    }
+
+    protected function withValidator($validator)
+    {
+        $this->email = $validator->validated()['email'] ?? '';
     }
 }

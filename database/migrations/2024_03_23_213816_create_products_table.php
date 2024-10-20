@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('sensitivity')->nullable(); // и эти
             $table->string('image');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

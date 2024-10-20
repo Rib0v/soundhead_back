@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Order;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreRequest extends FormRequest
 {
@@ -21,10 +22,18 @@ class StoreRequest extends FormRequest
      */
     public function rules(): array
     {
+        $notAuth = is_null($this->user());
+
         return [
-            'name' => 'required|string',
-            'phone' => 'required|numeric',
-            'email' => 'string|email',
+            'name' => [
+                Rule::requiredIf($notAuth),
+                'string',
+            ],
+            'phone' => [
+                Rule::requiredIf($notAuth),
+                'numeric',
+            ],
+            'email' => 'nullable|string|email',
             'address' => 'nullable|string',
             'comment' => 'nullable|string',
             'products' => 'required|array',
