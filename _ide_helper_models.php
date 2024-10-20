@@ -20,6 +20,8 @@ namespace App\Models{
  * @property string $slug
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Value> $values
+ * @property-read int|null $values_count
  * @method static \Database\Factories\AttributeFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder|Attribute newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Attribute newQuery()
@@ -37,17 +39,6 @@ namespace App\Models{
 /**
  * 
  *
- * @property int $id
- * @property int|null $user_id
- * @property int $status_id
- * @property int $total
- * @property string $name
- * @property string $phone
- * @property string|null $email
- * @property string|null $address
- * @property string|null $comment
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderProduct> $orderProducts
  * @property-read int|null $order_products_count
  * @property-read \App\Models\Status|null $status
@@ -55,17 +46,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Order newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Order newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Order query()
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereAddress($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereComment($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereEmail($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order wherePhone($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereStatusId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereTotal($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Order whereUserId($value)
  */
 	class Order extends \Eloquent {}
 }
@@ -74,25 +54,11 @@ namespace App\Models{
 /**
  * 
  *
- * @property int $id
- * @property int $order_id
- * @property int $product_id
- * @property int $count
- * @property int $price
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Product|null $product
  * @method static \Database\Factories\OrderProductFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct query()
- * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct whereCount($value)
- * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct whereOrderId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct wherePrice($value)
- * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct whereProductId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|OrderProduct whereUpdatedAt($value)
  */
 	class OrderProduct extends \Eloquent {}
 }
@@ -151,7 +117,7 @@ namespace App\Models{
  * @property int $product_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Product|null $product
+ * @property-read \App\Models\Product $product
  * @method static \Database\Factories\PhotoFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder|Photo newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Photo newQuery()
@@ -180,6 +146,7 @@ namespace App\Models{
  * @property string $image
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Photo> $photos
  * @property-read int|null $photos_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Value> $values
@@ -190,9 +157,11 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Product filtered()
  * @method static \Illuminate\Database\Eloquent\Builder|Product newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|Product newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Product onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder|Product query()
  * @method static \Illuminate\Database\Eloquent\Builder|Product sort($request)
  * @method static \Illuminate\Database\Eloquent\Builder|Product whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Product whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Product whereDescription($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Product whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Product whereImage($value)
@@ -203,6 +172,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder|Product whereSensitivity($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Product whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder|Product whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Product withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|Product withoutTrashed()
  */
 	class Product extends \Eloquent {}
 }
@@ -216,8 +187,8 @@ namespace App\Models{
  * @property int $value_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Product|null $product
- * @property-read \App\Models\Value|null $value
+ * @property-read \App\Models\Product $product
+ * @property-read \App\Models\Value $value
  * @method static \Database\Factories\ProductValueFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder|ProductValue newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder|ProductValue newQuery()
@@ -327,7 +298,7 @@ namespace App\Models{
  * @property int $attribute_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Attribute|null $attribute
+ * @property-read \App\Models\Attribute $attribute
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
  * @property-read int|null $products_count
  * @method static \Database\Factories\ValueFactory factory($count = null, $state = [])

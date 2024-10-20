@@ -31,17 +31,14 @@ class ShowResource extends JsonResource
 
     private function getProducts(): array
     {
-        $baseUrl = config('app.env') === 'production'
-            ? config('app.url')
-            : config('app.url') . ':' . config('app.port');
-
         $products = [];
-        foreach ($this->orderProducts as $key => $product) {
+
+        foreach ($this->orderProducts as $product) {
             $products[] = [
                 'id' => $product->id,
                 'name' => $product->product->name,
                 'slug' => $product->product->slug,
-                'image' => $baseUrl . '/storage/photos/products' . $product->product->image,
+                'image' => getBaseUrl() . '/storage/photos/products' . $product->product->image,
                 'count' => $product->count,
                 'price' => $product->price,
             ];

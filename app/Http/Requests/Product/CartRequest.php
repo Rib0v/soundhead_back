@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Requests\User;
+namespace App\Http\Requests\Product;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Contracts\Validation\Validator;
 
-class ChangeAddressRequest extends FormRequest
+class CartRequest extends FormRequest
 {
-    public string $address;
-
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -24,12 +24,12 @@ class ChangeAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'address' => 'required|string',
+            'product' => 'required|string',
         ];
     }
 
-    protected function withValidator($validator)
+    protected function failedValidation(Validator $validator)
     {
-        $this->address = $validator->validated()['address'] ?? '';
+        throw new HttpResponseException(response(['message' => 'Products not found'], 404));
     }
 }
