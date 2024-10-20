@@ -8,22 +8,17 @@ use App\Http\Resources\Order\IndexResource;
 use App\Http\Resources\Order\ShowResource;
 use App\Http\Resources\Order\UserResource;
 use App\Models\Order;
-use App\Models\Status;
 use App\Services\OrderService;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
 
 class OrderController extends Controller
 {
     /**
      * Список всех заказов
      * 
-     * @param Request $request
-     * 
      * @return Response
      */
-    public function index(Request $request): Response
+    public function index(): Response
     {
         return response(IndexResource::collection(Order::query()->paginate(20)));
     }
@@ -33,18 +28,17 @@ class OrderController extends Controller
      * 
      * @param StoreRequest $request
      * @param OrderService $service
-     * 
      * @return Response
      */
     public function store(StoreRequest $request, OrderService $service): Response
     {
-        $validated = $request->validated();
+        [$order, $orderProducts] = $service->getPreparedOrderAndProducts(
+            order: $request->validated(),
+            user: $request->user(),
+        );
 
-        $validated['products'] = $service->addActualPricesFromDB($validated['products']);
-        $preparedOrder = $service->prepareTheOrder($validated, $request);
-
-        $createdOrder = Order::create($preparedOrder);
-        $createdOrder->orderProducts()->createMany($validated['products']);
+        $createdOrder = Order::create($order);
+        $createdOrder->orderProducts()->createMany($orderProducts);
 
         return response([
             'message' => 'Заказ успешно создан',
@@ -57,18 +51,11 @@ class OrderController extends Controller
      * 
      * @param Order $order
      * @param StatusRequest $request
-     * @param OrderService $service
-     * 
      * @return Response
      */
-    public function changeStatus(Order $order, StatusRequest $request, OrderService $service): Response
+    public function changeStatus(Order $order, StatusRequest $request): Response
     {
-        $statusId = $request->validated('status');
-        $checkedStatus = $service->checkStatusId($statusId);
-
-        if (!$checkedStatus) return response(['message' => 'Указан id несуществующего статуса.'], 400);
-
-        $order->status_id = $statusId;
+        $order->status_id = $request->status;
         $order->save();
 
         return response(['message' => "Статус заказа #$order->id успешно изменён"]);
@@ -78,11 +65,9 @@ class OrderController extends Controller
      * Отображение заказа
      * 
      * @param Order $order
-     * @param Request $request
-     * 
      * @return Response
      */
-    public function show(Order $order, Request $request): Response
+    public function show(Order $order): Response
     {
         return response(new ShowResource($order));
     }
@@ -91,7 +76,6 @@ class OrderController extends Controller
      * Список заказов пользователя
      * 
      * @param int $user
-     * 
      * @return Response
      */
     public function showByUserId(int $user): Response
@@ -105,11 +89,9 @@ class OrderController extends Controller
      * Удаление заказа
      * 
      * @param Order $order
-     * @param Request $request
-     * 
      * @return Response
      */
-    public function destroy(Order $order, Request $request): Response
+    public function destroy(Order $order): Response
     {
         $order->delete();
 

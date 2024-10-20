@@ -15,8 +15,8 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(User::class)->nullable();
-            $table->foreignIdFor(Status::class)->default(1);
+            $table->foreignIdFor(User::class)->nullable()->constrained()->cascadeOnUpdate()->nullOnDelete();
+            $table->foreignIdFor(Status::class)->default(1)->constrained()->cascadeOnUpdate()->restrictOnDelete();
             $table->integer('total');
             $table->string('name');
             $table->string('phone');

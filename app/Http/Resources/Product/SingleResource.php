@@ -14,19 +14,20 @@ class SingleResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $baseUrl = config('app.env') === 'production'
-            ? config('app.url')
-            : config('app.url') . ':' . config('app.port');
+        return $this->getArray();
+    }
 
+    public function getArray(): array
+    {
         return [
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
             'price' => $this->price,
-            'image' => $baseUrl . '/storage/photos/products' . $this->image,
+            'image' => getBaseUrl() . '/storage/photos/products' . $this->image,
             'description' => $this->description,
             'attributes' => $this->getAttributes(),
-            'photos' => $this->getPhotos($baseUrl),
+            'photos' => $this->getPhotos(),
         ];
     }
 
@@ -35,7 +36,6 @@ class SingleResource extends JsonResource
         $options = [];
 
         foreach ($this->values as $value) {
-            // $options[$value->attribute->name] = $value->name;
             $options[] = [
                 'attribute_id' => $value->attribute->id,
                 'attribute_name' => $value->attribute->name,
@@ -48,8 +48,8 @@ class SingleResource extends JsonResource
         return $options;
     }
 
-    private function getPhotos(string $baseUrl): array
+    private function getPhotos(): array
     {
-        return array_map(fn ($photo) => $baseUrl . '/storage/photos/products' . $photo['url'], $this->photos->toArray());
+        return array_map(fn($photo) => getBaseUrl() . '/storage/photos/products' . $photo['url'], $this->photos->toArray());
     }
 }
