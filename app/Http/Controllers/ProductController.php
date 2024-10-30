@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Product\CartRequest;
+use App\Http\Requests\Product\CompareRequest;
 use App\Http\Requests\Product\UpdateRequest;
 use App\Http\Resources\Product\CartResource;
 use App\Http\Resources\Product\IndexResource;
@@ -9,7 +11,6 @@ use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
 
 class ProductController extends Controller
 {
@@ -23,13 +24,15 @@ class ProductController extends Controller
      */
     public function index(Request $request, ProductService $service): Response
     {
-        if (config('cache.enabled') && $service->isRequestWithoutFilters($request)) {
-            return response($service->getCachedPage($request));
+        if ($service->isRequestWithoutFilters($request->query())) {
+            $page = (int)$request->query('page', 1);
+            return response($service->getCachedPage($page));
         }
 
         $perPage = $request->query('perpage', config('app.products_per_page_default'));
 
         $products = Product::query()
+            ->with('values')
             ->filterOptions($request)
             ->filterRanges($request)
             ->sort($request)
@@ -62,18 +65,14 @@ class ProductController extends Controller
     /**
      * Сравнение товаров
      * 
-     * @param Request $request
+     * @param CompareRequest $request
      * @param ProductService $service
      * @return Response
      */
-    public function compare(Request $request, ProductService $service): Response
+    public function compare(CompareRequest $request, ProductService $service): Response
     {
-        if (!$request->has('product')) {
-            return response(['message' => 'Products not found'], 404);
-        }
-
-        $products = $service->getProductsToCompare($request->query('product'));
-        $resp = $service->getFormattedData($products, $request);
+        $products = $service->getProductsToCompare($request->product);
+        $resp = $service->getFormattedData($products);
 
         return response($resp);
     }
@@ -82,17 +81,13 @@ class ProductController extends Controller
      * Актуальные цены и ссылки на фото
      * для списка товаров из корзины пользователя
      * 
-     * @param Request $request
+     * @param CartRequest $request
      * @param ProductService $service
      * @return Response
      */
-    public function cart(Request $request, ProductService $service): Response
+    public function cart(CartRequest $request, ProductService $service): Response
     {
-        if (!$request->has('product')) {
-            return response(['message' => 'Products not found'], 404);
-        }
-
-        $products = $service->getProductsToCart($request->query('product'));
+        $products = $service->getProductsToCart($request->product);
 
         return response(CartResource::collection($products));
     }
@@ -101,15 +96,12 @@ class ProductController extends Controller
      * Создание товара
      * 
      * @param UpdateRequest $request
-     * @param ProductService $service
      * @return Response
      */
-    public function store(UpdateRequest $request, ProductService $service): Response
+    public function store(UpdateRequest $request): Response
     {
         $validated = $request->validated();
         $createdProduct = Product::create($validated);
-
-        $service->cacheProduct($createdProduct->id);
 
         return response(['message' => 'Товар создан.', 'product' => $createdProduct]);
     }
@@ -119,17 +111,13 @@ class ProductController extends Controller
      * 
      * @param UpdateRequest $request
      * @param Product $product
-     * @param ProductService $service
      * @return Response
      */
-    public function update(UpdateRequest $request, Product $product, ProductService $service): Response
+    public function update(UpdateRequest $request, Product $product): Response
     {
         $validated = $request->validated();
-
-        Product::where('id', $product->id)->update($validated);
+        $product->update($validated);
         $product->refresh();
-
-        $service->cacheProduct($product->id);
 
         return response(['message' => 'Товар обновлён.', 'product' => $product]);
     }

@@ -13,6 +13,6 @@ return [
      *
      * Source: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html#nbfDef
      */
-    'leeway' => env('JWT_LEEWAY', '60'), // in seconds
+    'leeway' => env('JWT_LEEWAY', 60), // in seconds
 
 ];

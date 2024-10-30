@@ -22,7 +22,6 @@ class IndexResource extends JsonResource
             'phone' => $this->phone,
             'orders' => $this->orders->count(),
             'orders_total' => $this->getOrdersTotal(),
-            // 'permissions' => $this->permissions,
             'permissions' => $this->getPermissions(),
             'created_at' => $this->created_at,
         ];
@@ -30,7 +29,7 @@ class IndexResource extends JsonResource
 
     private function getOrdersTotal(): int
     {
-        return (int)array_reduce($this->orders->toArray(), fn($accum, $order) => $accum += $order['total']);
+        return (int)array_reduce($this->orders->toArray(), fn($accumulator, $order) => $accumulator += $order['total']);
     }
 
     private function getPermissions(): array

@@ -4,6 +4,7 @@ namespace Tests\Unit\Services\Auth;
 
 use App\Contracts\TokenRepository;
 use App\Exceptions\JWTValidationException;
+use App\Services\Auth\JWTAuthDTO;
 use App\Services\Auth\JWTAuthService;
 use Mockery;
 use Tests\UnitTestCase;
@@ -32,7 +33,7 @@ class JWTAuthServiceTest extends UnitTestCase
     public function test_create_method_returns_valid_data(): void
     {
         $time = 1727984319;
-        $config = (object)self::getConfig();
+        $config = self::getConfig();
 
         $expected = [
             'access' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJzdWIiOjEsInBlciI6IjEsMiwzIiwiZXhwIjoxNzI3OTg3OTE5LCJ0eXAiOiJBVCJ9.EKJZkWVQirj1c4ErEvMkPuc-meLZE-Bj6PKkkE7k0x8',
@@ -58,7 +59,7 @@ class JWTAuthServiceTest extends UnitTestCase
 
         $decodedToken = self::$jwt->decode($encodedToken['access']);
 
-        $config = (object)self::getConfig();
+        $config = self::getConfig();
 
         $expected = [
             'iss' =>  $config->issuer,
@@ -81,7 +82,7 @@ class JWTAuthServiceTest extends UnitTestCase
 
         $decodedToken = self::$jwt->decode($encodedToken['refresh']);
 
-        $config = (object)self::getConfig();
+        $config = self::getConfig();
 
         $expected = [
             'iss' =>  $config->issuer,
@@ -96,7 +97,7 @@ class JWTAuthServiceTest extends UnitTestCase
 
     public function test_decode_method_throw_exception_when_token_expired(): void
     {
-        $config = (object)self::getConfig();
+        $config = self::getConfig();
         $accessTtlInSeconds = $config->access_ttl * 60;
         $timeInPast = time() - $accessTtlInSeconds - $config->leeway - 1;
 
@@ -171,7 +172,7 @@ class JWTAuthServiceTest extends UnitTestCase
     public function test_checkRefresh_method_throw_exception_when_access_token_provided(): void
     {
         $this->expectException(JWTValidationException::class);
-        $this->expectExceptionCode(401);
+        $this->expectExceptionCode(403);
         $this->expectExceptionMessage('Токен не является типом refresh.');
 
         $encodedToken = self::$jwt->create(1);
@@ -202,7 +203,7 @@ class JWTAuthServiceTest extends UnitTestCase
         $this->assertArrayHasKey('decoded', $refreshData);
         $this->assertArrayHasKey('tokens', $refreshData);
 
-        $config = (object) $this->getConfig();
+        $config = self::getConfig();
 
         $expectedOldRefreshToken = [
             'iss' => $config->issuer,
@@ -255,17 +256,15 @@ class JWTAuthServiceTest extends UnitTestCase
 
     // ============================== HELPERS ==============================
 
-    protected static function getConfig(): array
+    protected static function getConfig(): JWTAuthDTO
     {
-        return [
-
-            'issuer' => 'http://example.com',
-            'key' => 'example_key',
-            'access_ttl' => 60, // in minutes
-            'refresh_ttl' => 43200, // in minutes
-            'leeway' => 60, // in seconds
-
-        ];
+        return new JWTAuthDTO(
+            issuer: 'http://example.com',
+            key: 'example_key',
+            access_ttl: 60, // in minutes
+            refresh_ttl: 43200, // in minutes
+            leeway: 60, // in seconds
+        );
     }
 
     protected static function getMockedTokenRepository($wrong = false)

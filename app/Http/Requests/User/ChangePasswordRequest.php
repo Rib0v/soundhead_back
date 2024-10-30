@@ -6,6 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ChangePasswordRequest extends FormRequest
 {
+    public string $newPassword;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -34,5 +36,10 @@ class ChangePasswordRequest extends FormRequest
             'old_password' => 'required|min:3|current_password',
             'new_password' => 'required|min:3|confirmed',
         ];
+    }
+
+    protected function withValidator($validator)
+    {
+        $this->newPassword = $validator->validated()['new_password'] ?? '';
     }
 }

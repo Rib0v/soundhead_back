@@ -14,6 +14,22 @@ if (!function_exists('getAppUrl')) {
     }
 }
 
+if (!function_exists('getBaseUrl')) {
+
+    /**
+     * Получение базового url
+     * с подстановкой порта, если требуется
+     * 
+     * @return string
+     */
+    function getBaseUrl(): string
+    {
+        return (config('app.port') === '80')
+            ? config('app.url')
+            : config('app.url') . ':' . config('app.port');
+    }
+}
+
 if (!function_exists('strParamsToArr')) {
 
     /**
@@ -26,5 +42,19 @@ if (!function_exists('strParamsToArr')) {
     function strParamsToArr(array $queryParams): array
     {
         return array_map(fn($value) => explode(',', trim($value, ',')), $queryParams);
+    }
+}
+
+if (!function_exists('toSlug')) {
+
+    /**
+     * Конвертация строки в slug
+     * 
+     * @param string $string
+     * @return string
+     */
+    function toSlug(string $string): string
+    {
+        return \Illuminate\Support\Str::slug($string);
     }
 }

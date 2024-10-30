@@ -6,6 +6,9 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ChangeProfileRequest extends FormRequest
 {
+    public string $name;
+    public string $phone;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -25,5 +28,13 @@ class ChangeProfileRequest extends FormRequest
             'name' => 'required|string',
             'phone' => 'required|string',
         ];
+    }
+
+    protected function withValidator($validator)
+    {
+        $validated = $validator->validated();
+
+        $this->name = $validated['name'] ?? '';
+        $this->phone = $validated['phone'] ?? '';
     }
 }

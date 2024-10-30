@@ -16,25 +16,10 @@ use UnexpectedValueException;
 
 class JWTAuthService
 {
-    protected string $issuer;
-    protected string $key;
-    protected int $access_ttl;
-    protected int $refresh_ttl;
-    protected int $leeway;
-    protected TokenRepository $tokenRepository;
-
-    public function __construct(array $config, TokenRepository $tokenRepository)
-    {
-        // TODO заменить array на DTO
-
-        $this->issuer = $config['issuer'];
-        $this->key = $config['key'];
-        $this->access_ttl = $config['access_ttl'];
-        $this->refresh_ttl = $config['refresh_ttl'];
-        $this->leeway = $config['leeway'];
-
-        $this->tokenRepository = $tokenRepository;
-    }
+    public function __construct(
+        protected JWTAuthDTO $config,
+        protected TokenRepository $tokenRepository
+    ) {}
 
     /**
      * Генерация новой пары токенов
@@ -46,11 +31,11 @@ class JWTAuthService
     public function create(int $userId, array $permissions = [], ?int $time = null): array
     {
         $time ??= time();
-        $expiredAccess = $time + 60 * $this->access_ttl;
-        $expiredRefresh = $time + 60 * $this->refresh_ttl;
+        $expiredAccess = $time + 60 * $this->config->access_ttl;
+        $expiredRefresh = $time + 60 * $this->config->refresh_ttl;
 
         $payload = [
-            'iss' => $this->issuer,
+            'iss' => $this->config->issuer,
             'sub' => $userId,
             'per' => join(',', $permissions),
         ];
@@ -67,8 +52,8 @@ class JWTAuthService
             'typ' => 'RT',
         ];
 
-        $jwtAccess = JWT::encode($payloadAccess, $this->key, 'HS256');
-        $jwtRefresh = JWT::encode($payloadRefresh, $this->key, 'HS256');
+        $jwtAccess = JWT::encode($payloadAccess, $this->config->key, 'HS256');
+        $jwtRefresh = JWT::encode($payloadRefresh, $this->config->key, 'HS256');
 
         $this->tokenRepository->saveRefreshToken(
             userId: $userId,
@@ -80,7 +65,7 @@ class JWTAuthService
             'access' => $jwtAccess,
             'refresh' => $jwtRefresh,
             'access_exp' => $expiredAccess,
-            'refresh_minutes' => $this->refresh_ttl, // для cookie, там exp указывается в минутах, а не timestamp
+            'refresh_minutes' => $this->config->refresh_ttl, // для cookie, там exp указывается в минутах, а не timestamp
         ];
     }
 
@@ -98,10 +83,10 @@ class JWTAuthService
             throw new JWTValidationException("Токен не найден.", 401);
         }
 
-        JWT::$leeway = $this->leeway;
+        JWT::$leeway = $this->config->leeway;
 
         try {
-            $decoded = JWT::decode($token, new Key($this->key, 'HS256'));
+            $decoded = JWT::decode($token, new Key($this->config->key, 'HS256'));
             $decoded->per = $this->permissionsFromTokenToArray($decoded->per);
         } catch (InvalidArgumentException $e) {
             throw new JWTValidationException("Ключ отсутствует, или имеет неверный формат.", 401);
@@ -147,10 +132,7 @@ class JWTAuthService
     public function checkAccess(?string $token): stdClass
     {
         $decoded = $this->decode($token);
-
-        if ($decoded->typ !== 'AT') {
-            throw new JWTValidationException("Токен не является типом access.", 401);
-        }
+        $this->checkTokenIsAccessType($decoded);
 
         return $decoded;
     }
@@ -165,10 +147,7 @@ class JWTAuthService
     public function checkRefresh(?string $token): stdClass
     {
         $decoded = $this->decode($token);
-
-        if ($decoded->typ !== 'RT') {
-            throw new JWTValidationException("Токен не является типом refresh.", 401);
-        }
+        $this->checkTokenIsRefreshType($decoded);
 
         if (! $this->tokenRepository->isRefreshTokenExists($token)) {
             throw new JWTValidationException("Refresh-токен недействителен.", 403);
@@ -186,7 +165,11 @@ class JWTAuthService
      */
     public function refresh(?string $token): array
     {
-        $decoded = $this->checkRefresh($token);
+        try {
+            $decoded = $this->checkRefresh($token);
+        } catch (JWTValidationException $e) {
+            throw new JWTValidationException(message: $e->getMessage(), code: $e->getCode(), withoutRefreshCookie: true);
+        }
 
         return ['decoded' => $decoded, 'tokens' => $this->create($decoded->sub, $decoded->per)];
     }
@@ -201,15 +184,38 @@ class JWTAuthService
     public function destroy(?string $token): void
     {
         $decoded = $this->decode($token);
-
-        if ($decoded->typ !== 'RT') {
-            throw new JWTValidationException("Токен не является типом refresh.", 403);
-        }
+        $this->checkTokenIsRefreshType($decoded);
 
         $deleted = $this->tokenRepository->removeRefreshToken($token);
 
         if (!$deleted) {
             throw new JWTValidationException("Токен не найден в базе.", 403);
+        }
+    }
+    /**
+     * Проверка, что тип токена access
+     * 
+     * @param stdClass $token
+     * @return void
+     * @throws JWTValidationException  401 = не access токен
+     */
+    protected function checkTokenIsAccessType(stdClass $token): void
+    {
+        if ($token->typ !== 'AT') {
+            throw new JWTValidationException("Токен не является типом access.", 401);
+        }
+    }
+
+    /**
+     * Проверка, что тип токена refresh
+     * @param stdClass $token
+     * @return void
+     * @throws JWTValidationException  403 = не refresh токен
+     */
+    protected function checkTokenIsRefreshType(stdClass $token): void
+    {
+        if ($token->typ !== 'RT') {
+            throw new JWTValidationException("Токен не является типом refresh.", 403);
         }
     }
 }
