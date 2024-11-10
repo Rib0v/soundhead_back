@@ -192,8 +192,14 @@ class ProductControllerTest extends FeatureTestCase
 
         $response
             ->assertStatus(200)
-            ->assertJson([
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id', 'name', 'slug', 'price', 'image', 'description', 'brand', 'form'],
+                ],
+                'meta',
+            ])
+            ->assertJson(['data' => [
                 ['name' => $firstProductName]
-            ]);
+            ]]);
     }
 }
