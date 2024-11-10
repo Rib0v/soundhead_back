@@ -10,6 +10,7 @@ use App\Http\Resources\Product\IndexResource;
 use App\Models\Product;
 use App\Services\ProductService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Http\Response;
 
 class ProductController extends Controller
@@ -38,10 +39,10 @@ class ProductController extends Controller
             ->sort($request)
             ->paginate($perPage);
 
-        $data = IndexResource::collection($products)->toArray($request);
-        $meta = $service->getMeta($products);
-
-        return response(compact('data', 'meta'));
+        return response([
+            'data' => IndexResource::collection($products),
+            'meta' => $service->getMeta($products),
+        ]);
     }
 
     /**
@@ -72,9 +73,8 @@ class ProductController extends Controller
     public function compare(CompareRequest $request, ProductService $service): Response
     {
         $products = $service->getProductsToCompare($request->product);
-        $resp = $service->getFormattedData($products);
 
-        return response($resp);
+        return response($service->getFormattedData($products));
     }
 
     /**
@@ -83,13 +83,13 @@ class ProductController extends Controller
      * 
      * @param CartRequest $request
      * @param ProductService $service
-     * @return Response
+     * @return ResourceCollection
      */
-    public function cart(CartRequest $request, ProductService $service): Response
+    public function cart(CartRequest $request, ProductService $service): ResourceCollection
     {
         $products = $service->getProductsToCart($request->product);
 
-        return response(CartResource::collection($products));
+        return CartResource::collection($products);
     }
 
     /**
@@ -100,10 +100,10 @@ class ProductController extends Controller
      */
     public function store(UpdateRequest $request): Response
     {
-        $validated = $request->validated();
-        $createdProduct = Product::create($validated);
-
-        return response(['message' => 'Товар создан.', 'product' => $createdProduct]);
+        return response([
+            'message' => 'Товар создан.',
+            'product' => Product::create($request->validated()),
+        ]);
     }
 
     /**
@@ -115,9 +115,7 @@ class ProductController extends Controller
      */
     public function update(UpdateRequest $request, Product $product): Response
     {
-        $validated = $request->validated();
-        $product->update($validated);
-        $product->refresh();
+        $product->update($request->validated());
 
         return response(['message' => 'Товар обновлён.', 'product' => $product]);
     }
@@ -140,17 +138,15 @@ class ProductController extends Controller
      * 
      * @param string $query
      * @param Request $request
-     * @return Response
+     * @return ResourceCollection
      */
-    public function search(string $query, Request $request): Response
+    public function search(string $query, Request $request): ResourceCollection
     {
         $paginate = $request->query('paginate', '20');
-
         $like = $this->getCaseInsensitiveLikeOperator();
-
         $products = Product::where('name', $like, "%$query%")->paginate($paginate);
 
-        return response(IndexResource::collection($products));
+        return IndexResource::collection($products);
     }
 
 

@@ -55,8 +55,8 @@ class AuthController extends Controller
          * происходит проверка токена.
          */
         $token = $request->bearerToken();
-        $checked = $jwt->checkAccess($token);
-        return response(['decoded' => $checked]);
+
+        return response(['decoded' => $jwt->checkAccess($token)]);
     }
 
     /**
@@ -70,8 +70,8 @@ class AuthController extends Controller
     public function checkRefresh(Request $request, JWTAuthService $jwt): Response
     {
         $token = $request->cookie('refresh');
-        $checked = $jwt->checkRefresh($token);
-        return response(['decoded' => $checked]);
+
+        return response(['decoded' => $jwt->checkRefresh($token)]);
     }
 
     /**
@@ -124,8 +124,8 @@ class AuthController extends Controller
         }
     }
 
-    public function test()
+    public function test(): Response
     {
-        return response(['message' => 'test']);
+        return response(['message' => 'OK']);
     }
 }

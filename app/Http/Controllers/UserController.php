@@ -10,7 +10,7 @@ use App\Http\Requests\User\StoreRequest;
 use App\Http\Resources\User\IndexResource;
 use App\Models\User;
 use App\Services\Auth\JWTAuthService;
-use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Http\Response;
 
 class UserController extends Controller
@@ -18,11 +18,11 @@ class UserController extends Controller
     /**
      * Список пользователей
      * 
-     * @return Response
+     * @return ResourceCollection
      */
-    public function index(): Response
+    public function index(): ResourceCollection
     {
-        return response(IndexResource::collection(User::paginate(20)));
+        return IndexResource::collection(User::paginate(20));
     }
 
     /**
@@ -52,11 +52,11 @@ class UserController extends Controller
      * Информация о пользователе
      * 
      * @param User $user
-     * @return Response
+     * @return IndexResource
      */
-    public function show(User $user): Response
+    public function show(User $user): IndexResource
     {
-        return response(new IndexResource($user));
+        return new IndexResource($user);
     }
 
     /**
