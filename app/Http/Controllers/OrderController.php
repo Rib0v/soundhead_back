@@ -9,6 +9,7 @@ use App\Http\Resources\Order\ShowResource;
 use App\Http\Resources\Order\UserResource;
 use App\Models\Order;
 use App\Services\OrderService;
+use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Http\Response;
 
 class OrderController extends Controller
@@ -16,11 +17,11 @@ class OrderController extends Controller
     /**
      * Список всех заказов
      * 
-     * @return Response
+     * @return ResourceCollection
      */
-    public function index(): Response
+    public function index(): ResourceCollection
     {
-        return response(IndexResource::collection(Order::query()->paginate(20)));
+        return IndexResource::collection(Order::query()->paginate(20));
     }
 
     /**
@@ -65,24 +66,24 @@ class OrderController extends Controller
      * Отображение заказа
      * 
      * @param Order $order
-     * @return Response
+     * @return ShowResource
      */
-    public function show(Order $order): Response
+    public function show(Order $order): ShowResource
     {
-        return response(new ShowResource($order));
+        return new ShowResource($order);
     }
 
     /**
      * Список заказов пользователя
      * 
      * @param int $user
-     * @return Response
+     * @return ResourceCollection
      */
-    public function showByUserId(int $user): Response
+    public function showByUserId(int $user): ResourceCollection
     {
         $orders = Order::where('user_id', $user)->paginate(20);
 
-        return response(UserResource::collection($orders));
+        return UserResource::collection($orders);
     }
 
     /**
