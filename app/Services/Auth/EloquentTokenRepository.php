@@ -5,7 +5,13 @@ namespace App\Services\Auth;
 use App\Contracts\TokenRepository;
 use App\Models\Token;
 
-class TokenRepositoryService implements TokenRepository
+/**
+ * Паттерн репозиторий используется для того,
+ * чтобы сделать сервис JWT-аутентификации
+ * независимым от фреймворка и переиспользуемым
+ * за его пределами
+ */
+class EloquentTokenRepository implements TokenRepository
 {
     public function saveRefreshToken(int $userId, string $token, int $expiredTimestamp): bool
     {

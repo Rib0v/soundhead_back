@@ -25,7 +25,7 @@ case "$1" in
       docker compose run --rm artisan jwt:conf # Генерируем ключ и конфиг для jwt-авторизации
     fi
 
-    docker compose up back -d
+    docker compose up back -d --remove-orphans
     docker compose run --rm artisan migrate --seed # Накатываем миграции и наполняем контентом
     
     echo "Initialization finished"
@@ -43,7 +43,7 @@ case "$1" in
 
   full)
     echo "Up docker full-stack mode..."
-    docker compose up nginx -d ${@:2}
+    docker compose up nginx -d --remove-orphans ${@:2}
     echo -e "\e[32m\nProject is started! Available at:\e[0m"
     echo -e "\e[1;33mhttp://localhost\e[0m"
     echo -e "\e[32mDocumentation:\e[0m"
@@ -52,7 +52,7 @@ case "$1" in
 
   up)
     echo "Up docker backend-only mode..."
-    docker compose up back -d ${@:2}
+    docker compose up back -d --remove-orphans ${@:2}
     echo -e "\e[32m\nProject is started! Available at:\e[0m"
     echo -e "\e[1;33mhttp://localhost\e[0m"
     ;;
