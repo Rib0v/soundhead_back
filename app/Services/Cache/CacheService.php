@@ -4,9 +4,19 @@ namespace App\Services\Cache;
 
 use App\Contracts\CacheRepository;
 
+/**
+ * Да, в Laravel есть свой сервис кеширования,
+ * но в нагрузочных тестах он проявил себя хуже,
+ * чем использование фасада Redis напрямую.
+ * Поэтому я сделал свою лёгкую версию кеш-сервиса
+ */
 class CacheService
 {
     public function __construct(
+        /**
+         * Паттерн репозиторий используется для того,
+         * чтобы сделать сервис независимым от фреймворка
+         */
         protected CacheRepository $cache,
         public bool $enableCache = true,
     ) {}

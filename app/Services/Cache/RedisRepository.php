@@ -5,7 +5,7 @@ namespace App\Services\Cache;
 use App\Contracts\CacheRepository;
 use Illuminate\Support\Facades\Redis;
 
-class RedisRepositoryService implements CacheRepository
+class RedisRepository implements CacheRepository
 {
     public function __construct(protected string $databasePrefix) {}
 
