@@ -35,16 +35,7 @@ class OrderService
         $order['total'] = $this->calculateTotalPrice($products);
 
         if (! is_null($user)) {
-            $user->get();
-
-            $order = [
-                ...$order,
-                'user_id' => $user->id,
-                'name' => $user->name,
-                'phone' => $user->phone,
-                'email' => $user->email,
-                'address' => $user->address,
-            ];
+            $order['user_id'] = $user->id;
         }
 
         return $order;

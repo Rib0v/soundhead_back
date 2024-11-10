@@ -6,9 +6,9 @@ use App\Services\Auth\CustomGate;
 use App\Services\Auth\JWTAuthDTO;
 use App\Services\Auth\JWTAuthService;
 use App\Services\Auth\JWTTokenGuard;
-use App\Services\Auth\TokenRepositoryService;
+use App\Services\Auth\EloquentTokenRepository;
 use App\Services\Cache\CacheService;
-use App\Services\Cache\RedisRepositoryService;
+use App\Services\Cache\RedisRepository;
 use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Events\QueryExecuted;
@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(CacheService::class, function (Application $app) {
             return new CacheService(
-                cache: new RedisRepositoryService(
+                cache: new RedisRepository(
                     databasePrefix: config('database.redis.options.prefix')
                 ),
                 enableCache: config('cache.enabled')
@@ -45,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
                 refresh_ttl: $config->refresh_ttl,
                 leeway: $config->leeway,
             );
-            return new JWTAuthService($dto, new TokenRepositoryService);
+            return new JWTAuthService($dto, new EloquentTokenRepository);
         });
     }
 
